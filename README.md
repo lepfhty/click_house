@@ -566,3 +566,11 @@ make dockerize
 rspec
 rubocop
 ```
+
+To test against another ClickHouse version or port, set `CLICKHOUSE_VERSION` and
+`CLICKHOUSE_PORT` (defaults: `22.9` and `8123`):
+
+```bash
+CLICKHOUSE_VERSION=26.3 CLICKHOUSE_PORT=28123 docker compose -p ch-26-3 up -d
+CLICKHOUSE_PORT=28123 rspec
+```

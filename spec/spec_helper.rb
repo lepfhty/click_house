@@ -11,7 +11,7 @@ Dir[File.join($ROOT_PATH, 'spec', 'support', '*.rb')].each { |f| require f }
 ClickHouse.config do |config|
   config.logger = Logger.new('log/test.log', level: Logger::DEBUG)
   config.database = 'click_house_rspec'
-  config.url = 'http://localhost:8123?allow_suspicious_low_cardinality_types=1&output_format_arrow_low_cardinality_as_dictionary=1'
+  config.url = "http://localhost:#{ENV.fetch('CLICKHOUSE_PORT', 8123)}?allow_suspicious_low_cardinality_types=1&output_format_arrow_low_cardinality_as_dictionary=1"
 end
 
 RSpec.configure do |config|
