@@ -14,6 +14,9 @@ help:
 	@echo '  make faraday1 rspec'
 	@echo '  make faraday2 rspec'
 	@echo '  make faraday2 oj rspec'
+	@echo '  '
+	@echo '  make faraday1 bench OR make faraday2 bench ARGS="--parser oj"'
+	@echo '  make bench-matrix ARGS="--note ..."'
 
 dockerize:
 	docker-compose up ${ARGS}
@@ -35,3 +38,9 @@ bundle:
 
 rspec:
 	BUNDLE_GEMFILE=${.BUNDLE_GEMFILE} rspec --require ${.REQUIRE} spec
+
+bench:
+	BUNDLE_GEMFILE=${.BUNDLE_GEMFILE} bundle exec ruby benchmark/run.rb ${ARGS}
+
+bench-matrix:
+	benchmark/matrix.sh ${ARGS}
