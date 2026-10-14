@@ -21,6 +21,12 @@ RSpec.describe ClickHouse::Extend::ConnectionSelective do
         expect(subject.select_value('SELECT 1, 2, 3, 4, 5')).to eq(1)
       end
     end
+
+    context 'when query fails' do
+      it 'errors' do
+        expect { subject.select_value('SELECT * FROM missing_table') }.to raise_error(ClickHouse::DbException)
+      end
+    end
   end
 
   describe '#select_one' do
@@ -33,6 +39,12 @@ RSpec.describe ClickHouse::Extend::ConnectionSelective do
     context 'when not exists' do
       it 'works' do
         expect(subject.select_one('SELECT NULL')).to eq({ 'NULL' => nil })
+      end
+    end
+
+    context 'when query fails' do
+      it 'errors' do
+        expect { subject.select_one('SELECT * FROM missing_table') }.to raise_error(ClickHouse::DbException)
       end
     end
   end
@@ -64,6 +76,12 @@ RSpec.describe ClickHouse::Extend::ConnectionSelective do
 
       it 'works' do
         expect(subject.select_all('SELECT * FROM rspec').to_a).to match_array(expectation)
+      end
+    end
+
+    context 'when query fails' do
+      it 'errors' do
+        expect { subject.select_all('SELECT * FROM missing_table') }.to raise_error(ClickHouse::DbException)
       end
     end
   end
