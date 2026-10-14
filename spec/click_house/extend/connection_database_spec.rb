@@ -30,7 +30,7 @@ RSpec.describe ClickHouse::Extend::ConnectionDatabase do
 
     context 'when engine' do
       it 'works' do
-        expect(subject.create_database('foo', engine: 'Lazy(10)')).to eq(true)
+        expect(subject.create_database('foo', engine: 'Memory')).to eq(true)
       end
     end
   end

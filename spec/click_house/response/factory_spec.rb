@@ -16,11 +16,11 @@ RSpec.describe ClickHouse::Response::Factory do
 
     context 'when exists' do
       let(:response) do
-        subject.select_all('SELECT SUM(1) AS s WITH TOTALS')
+        subject.select_all('SELECT toUInt32(SUM(1)) AS s WITH TOTALS')
       end
 
       it 'is present' do
-        expect(response.totals).to eq({ 's' => '1' })
+        expect(response.totals).to eq({ 's' => 1 })
       end
     end
   end
