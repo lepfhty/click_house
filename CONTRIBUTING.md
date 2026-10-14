@@ -59,8 +59,10 @@ Candidate performance changes are tracked as tickets in
 (`proposed`, `accepted`, `in progress`, `done`, `rejected`). Update the ticket and the
 index table when you pick one up or finish it, and link the PR.
 
-Benchmark scripts live in `lib/click_house/benchmark/`. Use synthetic data in this
-repository; don't commit customer data or production schemas.
+Measure with the benchmark tool in [`benchmark/`](benchmark/README.md). It appends
+results to `benchmark/results.csv`, tagged with the commit, dependency versions,
+ClickHouse version and machine. Use synthetic data; don't commit customer data or
+production schemas.
 
 ## Dependencies
 
