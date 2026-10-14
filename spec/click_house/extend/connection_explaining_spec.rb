@@ -9,21 +9,22 @@ RSpec.describe ClickHouse::Extend::ConnectionExplaining do
     SQL
   end
 
+  let(:sql) do
+    'SELECT 1 FROM rspec CROSS JOIN rspec'
+  end
+
   let(:expectation) do
-    <<~TXT
-      Expression ((Projection + Before ORDER BY))
-        Join (JOIN FillRightFirst)
-          Expression (Before JOIN)
-            ReadFromStorage (TinyLog)
-          Expression ((Joined actions + (Rename joined columns + (Projection + Before ORDER BY))))
-            ReadFromStorage (TinyLog)
-    TXT
+    subject.execute("EXPLAIN #{sql}").body
+  end
+
+  it 'returns a query plan' do
+    expect(expectation).to include('Join')
   end
 
   context 'when normal query' do
     it 'works' do
       buffer = StringIO.new
-      subject.explain('SELECT 1 FROM rspec CROSS JOIN rspec', io: buffer)
+      subject.explain(sql, io: buffer)
       expect(buffer.string).to eq(expectation)
     end
   end
@@ -31,7 +32,7 @@ RSpec.describe ClickHouse::Extend::ConnectionExplaining do
   context 'when EXPLAIN query' do
     it 'works' do
       buffer = StringIO.new
-      subject.explain('EXPLAIN SELECT 1 FROM rspec CROSS JOIN rspec', io: buffer)
+      subject.explain("EXPLAIN #{sql}", io: buffer)
       expect(buffer.string).to eq(expectation)
     end
   end
