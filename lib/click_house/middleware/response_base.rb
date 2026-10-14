@@ -30,6 +30,14 @@ module ClickHouse
         end
       end
 
+      # @return [Boolean]
+      # true when ClickHouse reported an error. The body is the error text, which may not
+      # match the content type (newer servers send text errors as application/json).
+      # @param env [Faraday::Env]
+      def error?(env)
+        !env.success? || env.response_headers.include?(RaiseError::EXCEPTION_CODE_HEADER)
+      end
+
       # @return [Config]
       def config
         options.fetch(:config)

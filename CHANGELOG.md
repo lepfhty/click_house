@@ -1,4 +1,7 @@
 # Unreleased
+* Raise `ClickHouse::DbException` for failed JSON and CSV queries on newer ClickHouse
+  servers (seen on 24.6, 25.8 and 26.3), which raised `JSON::ParserError`/`Oj::ParseError`
+  because the server sends error text with an `application/json` content type
 
 # 2.1.1
 * Fix logging with symbolized keys JSON
