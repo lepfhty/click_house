@@ -2,11 +2,11 @@ version: '3.5'
 
 services:
   clickhouse:
-    image: clickhouse/clickhouse-server:22.9
+    image: clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-22.9}
     ports:
-      - "8123:8123"
-      - "9000:9000"
-      - "9009:9009"
+      - "${CLICKHOUSE_PORT:-8123}:8123"
+    environment:
+      CLICKHOUSE_SKIP_USER_SETUP: 1
     ulimits:
       nproc: 65535
       nofile:
