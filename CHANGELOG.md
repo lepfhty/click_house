@@ -1,3 +1,5 @@
+# Unreleased
+
 # 2.1.1
 * Fix logging with symbolized keys JSON
 * Unknown formats return raw `Response::ResultSelt` like regular JSON query
