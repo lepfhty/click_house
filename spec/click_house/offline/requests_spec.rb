@@ -25,4 +25,15 @@ RSpec.describe 'requests without a server', :offline do
       'send_progress_in_http_headers' => '1'
     )
   end
+
+  it 'uses a config that shares no mutable state with the global one' do
+    global = ClickHouse.config
+    config = connection.config
+    shared = %i[headers global_params oj_load_options oj_dump_options json_load_options].select do |name|
+      config.public_send(name).equal?(global.public_send(name))
+    end
+
+    expect(shared).to be_empty
+    expect(config.json_serializer.config).to equal(config)
+  end
 end

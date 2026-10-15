@@ -17,7 +17,7 @@ module StubClickHouse
   # @param status [Integer] response status
   # @param headers [Hash] response headers
   # @param body [String] response body
-  # @param config [Hash] overrides for a clone of ClickHouse.config
+  # @param config [Hash] overrides for the copy of ClickHouse.config (see #stub_config)
   # @return [ClickHouse::Connection]
   def stub_clickhouse(status: 200, headers: JSON_HEADERS, body: '', **config)
     respond = lambda do |env|
@@ -29,8 +29,23 @@ module StubClickHouse
     stubs.get(//, &respond)
     stubs.post(//, &respond)
 
-    ClickHouse::Connection.new(
-      ClickHouse.config.clone.assign(url: 'http://clickhouse.test:8123', adapter: [:test, stubs], **config)
+    ClickHouse::Connection.new(stub_config(adapter: [:test, stubs], **config))
+  end
+
+  # A copy of ClickHouse.config that shares no mutable state with it, so specs can't leak
+  # changes into the global config.
+  # @return [ClickHouse::Config]
+  def stub_config(**overrides)
+    global = ClickHouse.config
+    global.clone.assign(
+      url: 'http://clickhouse.test:8123',
+      headers: global.headers.dup,
+      global_params: global.global_params.dup,
+      oj_load_options: global.oj_load_options.dup,
+      oj_dump_options: global.oj_dump_options.dup,
+      json_load_options: global.json_load_options.dup,
+      json_serializer: global.json_serializer.class,
+      **overrides
     )
   end
 
