@@ -1,6 +1,6 @@
 # 01 — Replace the release script
 
-- **Status:** in progress
+- **Status:** done
 - **Area:** release process
 - **Effort:** S
 
