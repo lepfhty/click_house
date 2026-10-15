@@ -85,6 +85,30 @@ RSpec.describe 'response parsers' do
         end
       end
 
+      # String#strip's result and errors for these differ between Ruby versions, so the
+      # expected outcome comes from strip itself.
+      context 'when the body has an encoding a regexp can not scan' do
+        def outcome
+          [:returned, yield]
+        rescue StandardError => e
+          [e.class, e.message]
+        end
+
+        {
+          'invalid UTF-8 after content' => "x\xff".dup.force_encoding(Encoding::UTF_8),
+          'invalid UTF-8 inside JSON' => "{\"a\":\"\xff\"}".dup.force_encoding(Encoding::UTF_8),
+          'invalid UTF-8 before content' => "\xff x".dup.force_encoding(Encoding::UTF_8),
+          'UTF-16LE whitespace' => ' '.encode(Encoding::UTF_16LE),
+          'UTF-16LE content' => 'x'.encode(Encoding::UTF_16LE),
+          'UTF-32BE whitespace' => "\t".encode(Encoding::UTF_32BE)
+        }.each do |description, body|
+          it "matches String#strip for #{description}" do
+            expected = outcome { body.dup.strip.empty? }
+            expect(outcome { subject.blank_body?(success(body.dup)) }).to eq(expected)
+          end
+        end
+      end
+
       context 'when the body is nil' do
         it 'raises NoMethodError' do
           expect { subject.on_complete(success(nil)) }.to raise_error(NoMethodError)
