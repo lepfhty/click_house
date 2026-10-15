@@ -7,7 +7,13 @@ module TimeCastHelpers
     zone_name = value.time_zone.name if value.respond_to?(:time_zone)
     [value.class, value.inspect, value.to_r, value.utc_offset, value.zone, zone_name, value.utc.inspect]
   rescue StandardError => e
-    [e.class, e.message]
+    [e.class, error_message(e)]
+  end
+
+  # The message without the code snippet Ruby 3.1's error_highlight appends after a blank
+  # line, since the snippet shows the caller's source line
+  def error_message(error)
+    error.message.split("\n\n", 2).first
   end
 
   # Runs the block with the process time zone (ENV['TZ']) set to tz
