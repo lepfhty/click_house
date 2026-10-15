@@ -1,6 +1,6 @@
 # 02 — Faster DateTime / DateTime64 casting
 
-- **Status:** in progress
+- **Status:** done
 - **Area:** cpu
 - **Default-safe:** yes, provided results are identical (verify)
 - **Effort:** S
@@ -59,6 +59,20 @@ Local micro-benchmark (200k values, best of 3, Ruby 3.3.5, ActiveSupport 7.0.4, 
 | `DateTime64(3)` | 0.49 s | 0.39 s |
 | `DateTime64(3, 'UTC')` | 1.17 s | 0.60 s |
 | `DateTime64(9, 'UTC')` | 1.27 s | 0.69 s |
+
+`benchmark/results.csv` rows (offline suite, 100k rows, 10 iterations, Ruby 3.3.5,
+Faraday 2, `wall_min_ms`, JSON parser; Oj is similar):
+
+| Scenario | Before | After |
+|---|---|---|
+| `cast DateTime` | 209.5 ms | 178.7 ms (1.17x) |
+| `cast DateTime('UTC')` | 428.0 ms | 184.1 ms (2.32x) |
+| `cast DateTime64(3, 'UTC')` | 622.9 ms | 294.0 ms (2.12x) |
+
+Allocations drop for zoned columns (1.40M → 1.30M, 3.50M → 2.50M) but rise for plain
+`DateTime` (600k → 900k): slicing allocates a few short strings per value that
+`Time.strptime`'s C parser doesn't. Reading digits with `getbyte` would avoid them at some
+cost to readability.
 
 The unzoned columns are bounded by `Time.local` itself (about 0.21 s per 200k), which
 has to apply the process time zone's rules.
