@@ -47,6 +47,8 @@ Yandex uses HTTP interface for working from Java and Perl, Python and Go as well
 ClickHouse.config do |config|
   config.logger = Logger.new(STDOUT)
   config.adapter = :net_http
+  # or an adapter followed by its arguments, e.g. Faraday's test adapter and its stubs
+  config.adapter = [:test, Faraday::Adapter::Test::Stubs.new]
   config.database = 'metrics'
   config.url = 'http://localhost:8123'
   config.timeout = 60
