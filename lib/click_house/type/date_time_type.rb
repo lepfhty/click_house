@@ -7,9 +7,10 @@ module ClickHouse
 
       def cast(value, tz = nil)
         if tz
-          Time.find_zone(tz).strptime(value, FORMAT)
+          zone = TimeParser.find_zone(tz)
+          (zone && TimeParser.parse(value, zone, false)) || zone.strptime(value, FORMAT)
         else
-          Time.strptime(value, FORMAT)
+          TimeParser.parse(value, nil, false) || Time.strptime(value, FORMAT)
         end
       end
 

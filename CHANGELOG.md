@@ -1,4 +1,6 @@
 # Unreleased
+* Cast `DateTime` and `DateTime64` values faster (about 2x for columns with a time zone)
+  with identical results
 * `config.adapter` also accepts an array of a Faraday adapter and its arguments, e.g.
   `config.adapter = [:test, stubs]`
 * Raise `ClickHouse::DbException` for failed JSON and CSV queries on ClickHouse 23.5 and
@@ -6,6 +8,8 @@
   text with an `application/json` content type
 * Fix `NoMethodError` for `CGI.parse` in the logging middleware when no other gem loads
   the `cgi` library, e.g. Faraday 2.14+ with ActiveSupport 8+, or Ruby 4.0
+* Fix `ArgumentError` on every JSON response when using json gem 3.x. json 3 also rejects
+  unknown or string keys in `config.json_load_options`
 
 # 2.1.1
 * Fix logging with symbolized keys JSON
