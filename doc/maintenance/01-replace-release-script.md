@@ -1,6 +1,6 @@
 # 01 — Replace the release script
 
-- **Status:** accepted
+- **Status:** in progress
 - **Area:** release process
 - **Effort:** S
 
@@ -49,6 +49,14 @@ avoids changing every app's `Gemfile` later.
   failed Release is a rerun of the job rather than a half-finished release. Apps and
   Dependabot track git-pinned gems by tag, so the Release is for people reading what
   changed; nothing breaks if one is missing.
+
+## Implementation
+- `bin/release.sh` runs the checks above, then tags and pushes; `--dry-run`
+  (`make ARGS="--dry-run" release`) stops before tagging.
+- `bin/changelog-section X.Y.Z` prints a `CHANGELOG.md` section. The script uses it to
+  check the version and `Unreleased` sections, and `.github/workflows/release.yml` uses
+  it to write the Release notes.
+- CONTRIBUTING's release section describes the new process.
 
 ## Considered and not proposed
 - **release-please:** opens a release PR from the Conventional Commit history that bumps
