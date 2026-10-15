@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  github-release:
+    runs-on: ubuntu-24.04
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # full history, to check the tag is on master
+
+      - name: Set up Ruby 3.3
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+
+      - name: Check the tag matches ClickHouse::VERSION
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version=$(ruby -r ./lib/click_house/version -e 'print ClickHouse::VERSION')
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error::Tag $TAG doesn't match ClickHouse::VERSION $version"
+            exit 1
+          fi
+
+      - name: Check the tagged commit is on master
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          if ! git merge-base --is-ancestor "$TAG^{commit}" origin/master; then
+            echo "::error::Tag $TAG points to a commit that isn't on master"
+            exit 1
+          fi
+
+      - name: Extract release notes from CHANGELOG.md
+        env:
+          TAG: ${{ github.ref_name }}
+        run: bin/changelog-section "${TAG#v}" > notes.md
+
+      - name: Create GitHub Release
+        env:
+          TAG: ${{ github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$TAG" --verify-tag --title "$TAG" --notes-file notes.md
