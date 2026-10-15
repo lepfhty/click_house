@@ -1,6 +1,6 @@
 # 01 — Replace the release script
 
-- **Status:** proposed
+- **Status:** accepted
 - **Area:** release process
 - **Effort:** S
 
@@ -15,21 +15,19 @@ CONTRIBUTING already describes the fork's actual process: bump the version, move
 `Unreleased` CHANGELOG entries, merge, tag `vX.Y.Z` and push the tag. Nothing automates
 or checks it.
 
-## Decision needed: how apps get the fork
-- **Git source pinned to a tag (recommended).** Apps declare
-  `gem 'click_house', git: 'https://github.com/<owner>/click_house.git', tag: 'vX.Y.Z'`.
-  No gem server or credentials, and it's how the main app already consumes other forked
-  gems. Bundler builds the gem from the gemspec, so `spec.files` must keep working from a
-  git checkout.
-- **Private gem server.** Only worth it if apps need version constraints (`~> 2.2`)
-  rather than exact tags.
-- **New public gem name.** Only if people outside the main app will use the fork.
+## Decision: apps pin a git tag
+Apps declare
+`gem 'click_house', git: 'https://github.com/<owner>/click_house.git', tag: 'vX.Y.Z'`.
+No gem is published anywhere: no gem server or credentials, and it's how the main app
+already consumes other forked gems. Bundler builds the gem from the gemspec, so
+`spec.files` must keep working from a git checkout.
 
-Also decide where the repository lives. It is under a personal account; a gem the main
-app depends on may belong in the organization's account, alongside its other forks.
-Moving it first avoids changing every app's `Gemfile` later.
+## Open question: where the repository lives
+The repository is under a personal account; a gem the main app depends on may belong in
+the organization's account, alongside its other forks. Moving it before the first tag
+avoids changing every app's `Gemfile` later.
 
-## Proposal (for the git-tag option)
+## Proposal
 - Replace `bin/release.sh` with a script that:
   - checks it is on an up-to-date `master` with a clean tree;
   - reads `ClickHouse::VERSION` and fails if tag `vX.Y.Z` already exists;
@@ -44,4 +42,3 @@ Moving it first avoids changing every app's `Gemfile` later.
 
 ## Out of scope
 - Choosing the first fork version number (CONTRIBUTING says to continue from `2.1.2`).
-- Publishing to any gem server.
