@@ -1,4 +1,4 @@
-RSpec.describe 'response parsers' do
+RSpec.describe 'response parsers', :offline do
   let(:config) { ClickHouse.config }
 
   def env(status:, body:, headers:)

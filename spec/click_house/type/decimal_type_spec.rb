@@ -1,4 +1,4 @@
-RSpec.describe ClickHouse::Type::DecimalType do
+RSpec.describe ClickHouse::Type::DecimalType, :offline do
   describe '#casr' do
     context 'when String' do
       it 'works' do

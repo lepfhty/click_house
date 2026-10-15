@@ -1,4 +1,4 @@
-RSpec.describe ClickHouse::Type::FloatType do
+RSpec.describe ClickHouse::Type::FloatType, :offline do
   describe '#serialize' do
     it 'works' do
       expect(subject.serialize(5)).to be_a(Float)
