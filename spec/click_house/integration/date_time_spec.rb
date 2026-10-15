@@ -44,6 +44,28 @@ RSpec.describe ClickHouse::Type::DateTimeType do
     end
   end
 
+  describe 'cast exact values' do
+    it 'works' do
+      got = subject.select_one(<<~SQL)
+        SELECT
+          toDateTime('2019-01-01 09:05:06') AS a,
+          toDateTime('2019-01-01 09:05:06', 'Europe/Moscow') AS b,
+          toDateTime('2019-11-03 05:30:00', 'UTC') AS c,
+          toTimeZone(toDateTime('2019-11-03 05:30:00', 'UTC'), 'America/New_York') AS d,
+          toNullable(toDateTime('2019-01-01 09:05:06', 'UTC')) AS e,
+          CAST(NULL AS Nullable(DateTime('UTC'))) AS f
+      SQL
+
+      expect(got.fetch('a')).to be_instance_of(Time)
+      expect(got.fetch('b')).to be_instance_of(ActiveSupport::TimeWithZone)
+      expect(got.fetch('b').inspect).to eq('Tue, 01 Jan 2019 09:05:06.000000000 MSK +03:00')
+      expect(got.fetch('c').inspect).to eq('Sun, 03 Nov 2019 05:30:00.000000000 UTC +00:00')
+      expect(got.fetch('d').inspect).to eq('Sun, 03 Nov 2019 01:30:00.000000000 EDT -04:00')
+      expect(got.fetch('e').inspect).to eq('Tue, 01 Jan 2019 09:05:06.000000000 UTC +00:00')
+      expect(got.fetch('f')).to be_nil
+    end
+  end
+
   describe 'serialize' do
     let(:row) do
       {
