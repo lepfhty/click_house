@@ -35,7 +35,7 @@ module ClickHouse
       symbolize_keys: false,
     }.freeze
 
-    attr_accessor :adapter
+    attr_accessor :adapter # [Symbol, Class, Array] Faraday adapter, or an array of the adapter and its arguments
     attr_accessor :logger
     attr_accessor :scheme
     attr_accessor :host

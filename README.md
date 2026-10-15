@@ -47,6 +47,7 @@ Yandex uses HTTP interface for working from Java and Perl, Python and Go as well
 ClickHouse.config do |config|
   config.logger = Logger.new(STDOUT)
   config.adapter = :net_http
+  # or an adapter followed by its arguments, e.g. [:net_http_persistent, { pool_size: 5 }]
   config.database = 'metrics'
   config.url = 'http://localhost:8123'
   config.timeout = 60
@@ -573,4 +574,12 @@ To test against another ClickHouse version or port, set `CLICKHOUSE_VERSION` and
 ```bash
 CLICKHOUSE_VERSION=26.3 CLICKHOUSE_PORT=28123 docker compose -p ch-26-3 up -d
 CLICKHOUSE_PORT=28123 rspec
+```
+
+Specs tagged `:offline` don't need a server. They skip the database setup hooks, and
+full-stack ones answer requests with canned responses through Faraday's test adapter
+(`stub_clickhouse` in `spec/support/stub_clickhouse.rb`):
+
+```bash
+rspec --tag offline
 ```

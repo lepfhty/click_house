@@ -1,4 +1,4 @@
-RSpec.describe ClickHouse::Type::DateTime64Type do
+RSpec.describe ClickHouse::Type::DateTime64Type, :offline do
   let(:precisions) do
     (0..9).to_a
   end

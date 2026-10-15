@@ -1,4 +1,4 @@
-RSpec.describe ClickHouse::Type::TimeParser do
+RSpec.describe ClickHouse::Type::TimeParser, :offline do
   let(:zone) { Time.find_zone('UTC') }
 
   describe '.parse' do

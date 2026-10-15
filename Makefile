@@ -6,7 +6,7 @@
 help:
 	@echo 'Available targets:'
 	@echo '  make dockerize OR make ARGS="--build" dockerize'
-	@echo '  make release'
+	@echo '  make release OR make ARGS="--dry-run" release'
 	@echo '  '
 	@echo '  make faraday1 bundle'
 	@echo '  make faraday2 bundle'
@@ -22,7 +22,7 @@ dockerize:
 	docker-compose up ${ARGS}
 
 release:
-	bin/release.sh
+	bin/release.sh ${ARGS}
 
 faraday1:
 	$(eval .BUNDLE_GEMFILE=Gemfile_faraday1)

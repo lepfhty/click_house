@@ -1,4 +1,4 @@
-RSpec.describe ClickHouse::Definition::ColumnSet do
+RSpec.describe ClickHouse::Definition::ColumnSet, :offline do
   def squish(string)
     string.gsub(/[[:space:]]/, '').strip
   end

@@ -1,4 +1,4 @@
-RSpec.describe ClickHouse::Type::IPType do
+RSpec.describe ClickHouse::Type::IPType, :offline do
   describe '#cast' do
     let(:ip) do
       IPAddr.new('127.0.0.1')
