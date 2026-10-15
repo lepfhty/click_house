@@ -45,3 +45,56 @@ larger population. So the default stays, and users who need to can turn it off.
 ## Considered and not proposed
 - Retrying automatically without the param after a `READONLY` (164) error: it's magic,
   costs an extra round trip, and hides the configuration problem.
+- Switching selects to `JSONCompactEachRowWithProgress` instead (see below).
+
+## Progress output formats
+Investigated whether the `*WithProgress` output formats could replace the header setting,
+since they report progress in the response body instead of headers. Tested against
+dockerized 22.9, 24.6, 24.12, 25.1, 25.3, 25.8, 26.1, 26.2 and 26.3.
+
+### Availability
+- `JSONCompactEachRowWithProgress` (and `JSONCompactStringsEachRowWithProgress`) were
+  added in 25.2 ([#75037](https://github.com/ClickHouse/ClickHouse/pull/75037)): absent
+  in 25.1, present in 25.3.
+- `JSONEachRowWithProgress` exists in all tested versions, but only writes progress
+  "whenever the progress happens" since 25.1
+  ([#73834](https://github.com/ClickHouse/ClickHouse/pull/73834)). On 24.6 a long
+  aggregation sends nothing until the end.
+
+### Output (26.3)
+One JSON object per line: `{"progress":{...}}` lines (every ~100 ms), `{"meta":[...]}`,
+`{"row":[...]}`, then `{"totals":[...]}` and `{"rows_before_limit_at_least":N}` when
+applicable. The last progress line carries the final read stats.
+
+### Findings
+| Question | Finding |
+|---|---|
+| Works for `readonly=1` users? | Yes. The format comes from `default_format`, which isn't a setting change. |
+| Keeps a long SELECT alive without the header? | On 25.8, yes: first bytes at 0.1 s, a 5 s aggregation survives a 2 s read timeout. **On 26.1+, not by default** (next row). |
+| Interaction with compression | 26.1 turned `enable_http_compression` on by default (25.8 has it off). Net::HTTP asks for gzip, so with Faraday 2 the server gzips the response, and the compressed stream holds the progress lines back until the end: the 2 s read timeout fires. With `Accept-Encoding: identity` the lines stream again. The header setting is unaffected: the driver as-is survives a 2 s timeout on 26.3 with gzip, on Faraday 1 and 2. |
+| Keeps a long INSERT … SELECT alive? | **No.** There are no result rows, so no body is written; the 2 s read timeout fires. With the header setting the same insert returns 200. The same applies to DDL and mutations run with `mutations_sync`. |
+| Summary header | Sent with the first progress line, so `X-ClickHouse-Summary` is nearly empty for long queries (read_rows 104M of 6B). `Response::Summary` and the logged read stats would have to come from the last progress line instead. |
+| Errors after output starts | 26.x writes an `__exception__` block tagged with the `X-ClickHouse-Exception-Tag` header value; 25.x writes the error into the format (`http_write_exception_in_output_format`, default 1 until 25.11). Either way the status is already 200, so the driver would need new detection code. |
+
+### Recommendation: don't switch selects to it
+- It can't replace the header setting: it only covers queries that return rows, needs
+  25.2+, and loses its keepalive on 26.1+ unless compression is turned off for the request.
+- It would rewrite the response path: line-delimited parsing, a new place to read summary
+  stats from, new mid-stream error detection, and `ResultSet#data` changing from hashes to
+  arrays unless converted back. Older servers would still need the current path, so the
+  driver would carry two.
+- Keep the plan above: make `send_progress_in_http_headers` configurable, default on.
+
+### Where it does fit
+The streaming select API (ticket 05) is new, so it can use a line-delimited format without
+breaking anything. On 25.2+ `JSONCompactEachRowWithProgress` gives types, rows, totals,
+final stats and progress in one stream. Ticket 05 should decide how to handle compression
+(the keepalive needs `Accept-Encoding: identity`, which costs network IO) and fall back to
+`JSONCompactEachRowWithNamesAndTypes` on older servers.
+
+### Existing gaps found along the way
+- A query that fails after a large result starts streaming surfaces as
+  `NetworkException: end of file reached` (the server aborts the chunked response), not
+  `DbException`.
+- A small result that fails mid-way raises `DbException` with the partial JSON body as its
+  message.

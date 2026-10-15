@@ -64,6 +64,11 @@ results to `benchmark/results.csv`, tagged with the commit, dependency versions,
 ClickHouse version and machine. Use synthetic data; don't commit customer data or
 production schemas.
 
+## Maintenance work
+
+Tooling, test and release-process work that doesn't change the driver's behavior is
+tracked the same way in [`doc/maintenance/`](doc/maintenance/README.md).
+
 ## Dependencies
 
 The gem's `Gemfile.lock` only affects this repository's own tests. Apps resolve
