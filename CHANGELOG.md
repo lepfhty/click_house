@@ -1,4 +1,6 @@
 # Unreleased
+* Cast `DateTime` and `DateTime64` values faster (about 2x for columns with a time zone)
+  with identical results
 * `config.adapter` also accepts an array of a Faraday adapter and its arguments, e.g.
   `config.adapter = [:test, stubs]`
 * Raise `ClickHouse::DbException` for failed JSON and CSV queries on ClickHouse 23.5 and

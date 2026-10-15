@@ -59,6 +59,7 @@ module Bench
     def parse_scenario(config, rows)
       body = Fixtures.select_body(Fixtures::MIXED_COLUMNS, rows)
       parser = parser(config)
+      raise 'parse_json_mixed: the parser left the body unparsed' unless parse(config, body).is_a?(Hash)
 
       Scenario.new(
         suite: 'offline', name: 'parse_json_mixed', rows: rows,
@@ -110,6 +111,7 @@ module Bench
 
     def response_env(body)
       Faraday::Env.from(
+        status: 200,
         body: body.dup,
         response_headers: Faraday::Utils::Headers.new('content-type' => JSON_CONTENT_TYPE)
       )
