@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Prints the body of a top-level CHANGELOG section, e.g. `bin/changelog-section 2.1.1`
+# or `bin/changelog-section Unreleased`, without its heading or surrounding blank lines.
+# Exits 1 if the section's heading is missing.
+set -euo pipefail
+
+if [[ $# -lt 1 || $# -gt 2 ]]; then
+  echo "usage: $0 SECTION [CHANGELOG]" >&2
+  exit 2
+fi
+
+section=$1
+changelog=${2:-CHANGELOG.md}
+
+# Sections end at the next "# " heading. Lines inside ``` fences are body text,
+# since code samples contain "# " comments.
+awk -v heading="# $section" '
+  /^```/ { fenced = !fenced }
+  !fenced && /^# / {
+    if (inside) exit
+    sub(/[ \t]+$/, "")
+    if ($0 == heading) { inside = found = 1; next }
+  }
+  inside { lines[++n] = $0 }
+  END {
+    if (!found) exit 1
+    first = 1; last = n
+    while (first <= last && lines[first] ~ /^[ \t]*$/) first++
+    while (last >= first && lines[last] ~ /^[ \t]*$/) last--
+    for (i = first; i <= last; i++) print lines[i]
+  }
+' "$changelog"
