@@ -35,9 +35,12 @@ module ClickHouse
         config.logger!.warn('since v1.4.0 use connection.get(body: "SELECT 1") instead of connection.get(query: "SELECT 1")')
       end
 
+      params = query.merge(database: database)
+      # settings only go on requests with a body: /ping answers 404 to any query string
+      params = { send_progress_in_http_headers: 1 }.merge(config.global_params, params) unless body.empty?
+
       transport.get(path) do |conn|
-        conn.params = query.merge(database: database).compact
-        conn.params[:send_progress_in_http_headers] = 1 unless body.empty?
+        conn.params = params.compact
         conn.body = body
       end
     end
