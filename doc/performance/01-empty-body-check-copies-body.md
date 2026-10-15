@@ -6,9 +6,11 @@
 - **Effort:** XS
 
 ## Problem
-`ParseJson`, `ParseJsonOj` and `ParseCsv` call `env.body.strip.empty?`. `String#strip`
-allocates a full copy of the response just to test for whitespace, briefly doubling the
-memory held by the raw body.
+`ParseJson`, `ParseJsonOj` and `ParseCsv` call `env.body.strip.empty?`. When the body has
+leading or trailing whitespace, `String#strip` allocates a full copy of the response just
+to test for whitespace, briefly doubling the memory held by the raw body. ClickHouse's
+JSON and CSV responses end with a newline, so this happens on every parse. (With nothing
+to strip, `strip` returns a string sharing the original buffer and copies nothing.)
 
 - `lib/click_house/middleware/parse_json.rb`
 - `lib/click_house/middleware/parse_json_oj.rb`
@@ -28,13 +30,16 @@ regexp can't scan without raising (invalid or non-ASCII-compatible encoding) fal
 `strip.empty?`, so error behavior is unchanged too; a fuzz over 1.8M byte strings in nine
 encodings found no difference in results or exceptions on Ruby 2.7 and 3.3. Specs in
 `spec/click_house/middleware/response_parsers_spec.rb` pin empty, whitespace, NUL, non-ASCII
-whitespace, binary, invalid UTF-8 and nil bodies.
+whitespace, binary, invalid UTF-8 and nil bodies, and compare against `strip` at run time
+for bodies only the fallback handles, whose outcome differs between Ruby versions.
 
-On a 22 MB body the check no longer allocates (was a 22 MB copy). It is slower than
+On a 22 MB body ending in a newline, like a real response, the check no longer allocates
+(was a 22 MB copy). It is slower than
 `strip` only for bodies made of megabytes of leading whitespace (~10 ns per byte), which
 ClickHouse doesn't send.
 
 `benchmark/results.csv` rows (offline suite, 100k rows, 10 iterations, Ruby 3.3.5,
 Faraday 2): `parse_json_mixed` time is unchanged within noise (JSON 222.5 → 233.2 ms min,
-Oj 193.5 → 195.4 ms). The benchmark counts allocated objects, not bytes, so the saved copy
-shows up as one object fewer per parse; the memory saving is the body's size per response.
+Oj 193.5 → 195.4 ms). The benchmark's fixture body has no trailing newline, so the old
+code made no copy there either: the one object fewer per parse is the shared string `strip`
+returned. The benchmark doesn't show the memory saving, which applies to real responses.
