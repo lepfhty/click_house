@@ -1,6 +1,6 @@
 # 01 — Avoid copying the response body to check emptiness
 
-- **Status:** in progress
+- **Status:** done
 - **Area:** memory
 - **Default-safe:** yes (identical behavior)
 - **Effort:** XS
@@ -33,3 +33,8 @@ whitespace, binary, invalid UTF-8 and nil bodies.
 On a 22 MB body the check no longer allocates (was a 22 MB copy). It is slower than
 `strip` only for bodies made of megabytes of leading whitespace (~10 ns per byte), which
 ClickHouse doesn't send.
+
+`benchmark/results.csv` rows (offline suite, 100k rows, 10 iterations, Ruby 3.3.5,
+Faraday 2): `parse_json_mixed` time is unchanged within noise (JSON 222.5 → 233.2 ms min,
+Oj 193.5 → 195.4 ms). The benchmark counts allocated objects, not bytes, so the saved copy
+shows up as one object fewer per parse; the memory saving is the body's size per response.
