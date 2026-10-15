@@ -4,6 +4,8 @@ module ClickHouse
   module Middleware
     class ResponseBase < Faraday::Middleware
       CONTENT_TYPE_HEADER = 'content-type'
+      # any character String#strip keeps
+      NON_BLANK = /[^\0\t\n\v\f\r ]/.freeze
 
       attr_reader :options
       attr_reader :content_type
@@ -36,6 +38,17 @@ module ClickHouse
       # @param env [Faraday::Env]
       def error?(env)
         !env.success? || env.response_headers.include?(RaiseError::EXCEPTION_CODE_HEADER)
+      end
+
+      # @return [Boolean]
+      # same result as body.strip.empty? without copying the body. Bodies a regexp
+      # can't scan (invalid or non-ASCII-compatible encoding) fall back to strip.
+      # @param env [Faraday::Env]
+      def blank_body?(env)
+        body = env.body
+        return body.strip.empty? unless body.valid_encoding? && body.encoding.ascii_compatible?
+
+        !NON_BLANK.match?(body)
       end
 
       # @return [Config]
