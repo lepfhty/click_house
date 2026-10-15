@@ -140,4 +140,22 @@ RSpec.describe 'response parsers', :offline do
       end
     end
   end
+
+  describe ClickHouse::Middleware::ParseJson do
+    subject { described_class.new(nil, options: { config: config }, content_type: %r{application/json}) }
+
+    # json 3 accepts parse options only as keywords. Ruby 2.7 turns a trailing hash into
+    # keywords, so the block below can only tell the two calls apart on Ruby 3.
+    it 'passes the json load options to JSON.parse as keywords', if: RUBY_VERSION >= '3' do
+      allow(JSON).to receive(:parse).and_wrap_original do |original, source, *positional, **options|
+        expect(positional).to be_empty
+        expect(options).to eq(config.json_load_options)
+        original.call(source, **options)
+      end
+
+      response = env(status: 200, body: '{"a": 1.5}', headers: { 'content-type' => 'application/json' })
+      subject.on_complete(response)
+      expect(response.body).to eq('a' => BigDecimal('1.5'))
+    end
+  end
 end
