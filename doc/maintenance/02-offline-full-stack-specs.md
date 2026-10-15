@@ -1,6 +1,6 @@
 # 02 — Full-stack specs that don't need a server
 
-- **Status:** in progress
+- **Status:** done
 - **Area:** tests
 - **Effort:** S–M
 
