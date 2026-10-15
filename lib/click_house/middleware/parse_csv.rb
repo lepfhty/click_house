@@ -9,7 +9,7 @@ module ClickHouse
       def on_complete(env)
         return if error?(env) || !content_type?(env, content_type)
 
-        env.body = env.body.strip.empty? ? nil : CSV.parse(env.body)
+        env.body = blank_body?(env) ? nil : CSV.parse(env.body)
       end
     end
   end
