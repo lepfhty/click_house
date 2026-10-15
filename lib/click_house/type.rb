@@ -8,6 +8,7 @@ module ClickHouse
     autoload :DateType, 'click_house/type/date_type'
     autoload :DateTimeType, 'click_house/type/date_time_type'
     autoload :DateTime64Type, 'click_house/type/date_time64_type'
+    autoload :TimeParser, 'click_house/type/time_parser'
     autoload :IntegerType, 'click_house/type/integer_type'
     autoload :FloatType, 'click_house/type/float_type'
     autoload :BooleanType, 'click_house/type/boolean_type'

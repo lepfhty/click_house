@@ -23,12 +23,14 @@ module ClickHouse
       #   Valid range: [ 0 : 9 ].
       #   Typically are used - 3 (milliseconds), 6 (microseconds), 9 (nanoseconds).
       def cast(value, precision = 0, tz = nil)
-        format = precision.zero? ? BASE_FORMAT : CAST_FORMAT
+        fraction = !precision.zero?
+        format = fraction ? CAST_FORMAT : BASE_FORMAT
 
         if tz
-          Time.find_zone(tz).strptime(value, format)
+          zone = TimeParser.find_zone(tz)
+          (zone && TimeParser.parse(value, zone, fraction)) || zone.strptime(value, format)
         else
-          Time.strptime(value, format)
+          TimeParser.parse(value, nil, fraction) || Time.strptime(value, format)
         end
       end
 
