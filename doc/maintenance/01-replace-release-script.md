@@ -38,7 +38,26 @@ avoids changing every app's `Gemfile` later.
 - Point `make release` at it and update `make help`.
 - Update CONTRIBUTING's release section to say "run `make release`" and how apps pin
   the tag. Remove the warning about the old script.
-- Optional: a CI job on tag push that checks the tag matches `ClickHouse::VERSION`.
+- Add a release workflow that runs on `v*` tag pushes and creates the GitHub Release:
+  - give the job `permissions: contents: write` and use the built-in `GITHUB_TOKEN`;
+  - fail if the tag doesn't match `ClickHouse::VERSION`, or if the tagged commit isn't
+    on `master`;
+  - copy the `# X.Y.Z` section of `CHANGELOG.md` into a notes file and run
+    `gh release create "$TAG" --verify-tag --notes-file notes.md`.
+
+  The local script stops at pushing the tag, so it doesn't need `gh` or a token, and a
+  failed Release is a rerun of the job rather than a half-finished release. Apps and
+  Dependabot track git-pinned gems by tag, so the Release is for people reading what
+  changed; nothing breaks if one is missing.
+
+## Considered and not proposed
+- **release-please:** opens a release PR from the Conventional Commit history that bumps
+  the version and generates the changelog; merging it tags and creates the Release. It
+  would replace both the script and the hand-written `Unreleased` changelog, which is a
+  larger change than this ticket needs. Worth revisiting if writing changelog entries by
+  hand becomes a chore.
+- **Creating the Release from the local script:** needs `gh` installed and logged in
+  wherever the script runs, and leaves a pushed tag without a Release if that step fails.
 
 ## Out of scope
 - Choosing the first fork version number (CONTRIBUTING says to continue from `2.1.2`).
