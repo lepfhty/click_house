@@ -77,20 +77,30 @@ change gemspec constraints only when one blocks a real upgrade.
 
 ## Releases
 
-Apps install the fork from git, pinned to a release tag:
+A release is a git tag. No gem is published anywhere: apps install the fork from git,
+pinned to a release tag, and Bundler builds the gem from the gemspec:
 
 ```ruby
-gem 'click_house', git: 'https://github.com/lepfhty/click_house.git', tag: 'v2.2.0'
+gem 'click_house', git: 'https://github.com/lepfhty/click_house.git', tag: 'vX.Y.Z'
 ```
 
 To release:
 
-1. Bump `lib/click_house/version.rb` following semver, continuing from `2.1.2`.
-2. Move the `Unreleased` entries in `CHANGELOG.md` under the new version.
-3. Merge to `master`, then tag the merge commit `vX.Y.Z` and push the tag.
+1. In a PR, bump `lib/click_house/version.rb` following semver, continuing from `2.1.2`,
+   and move the `Unreleased` entries in `CHANGELOG.md` under a new `# X.Y.Z` heading.
+2. Merge it, then on an up-to-date `master` run `make release`.
 
-Don't run `make release` or `bin/release.sh`: they push to RubyGems under the upstream
-gem's name.
+`make release` runs `bin/release.sh`, which checks that `master` is clean and matches
+`origin/master`, that tag `vX.Y.Z` doesn't exist yet, that `CHANGELOG.md` has a
+`# X.Y.Z` section and nothing left under `Unreleased`, and that the gem builds. It then
+creates the annotated tag `vX.Y.Z` and pushes only that tag. `make ARGS="--dry-run"
+release` runs the checks without tagging.
+
+Pushing the tag triggers the release workflow (`.github/workflows/release.yml`), which
+checks the tag matches `ClickHouse::VERSION` and is on `master`, then creates the GitHub
+Release with the version's `CHANGELOG.md` section as its notes. `bin/release.sh` runs
+the same checks before tagging, so a failed run is usually transient: rerun the job. A
+missing Release breaks nothing, since apps pin the tag.
 
 ## Upstream
 
