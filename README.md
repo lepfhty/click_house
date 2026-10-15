@@ -576,3 +576,11 @@ To test against another ClickHouse version or port, set `CLICKHOUSE_VERSION` and
 CLICKHOUSE_VERSION=26.3 CLICKHOUSE_PORT=28123 docker compose -p ch-26-3 up -d
 CLICKHOUSE_PORT=28123 rspec
 ```
+
+Specs tagged `:offline` don't need a server. They skip the database setup hooks, and
+full-stack ones answer requests with canned responses through Faraday's test adapter
+(`stub_clickhouse` in `spec/support/stub_clickhouse.rb`):
+
+```bash
+rspec --tag offline
+```
