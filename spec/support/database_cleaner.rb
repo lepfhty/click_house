@@ -2,6 +2,8 @@ SYSTEM_DATABASES = %w[default system _temporary_and_external_tables]
 
 RSpec.configure do |config|
   config.around(:each) do |example|
+    next example.run if example.metadata[:offline]
+
     ClickHouse.connection.create_database(ClickHouse.config.database, if_not_exists: true)
 
     example.run

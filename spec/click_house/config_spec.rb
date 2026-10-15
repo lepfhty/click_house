@@ -1,4 +1,4 @@
-RSpec.describe ClickHouse::Config do
+RSpec.describe ClickHouse::Config, :offline do
   describe '#assign' do
     it 'works' do
       expect { subject.assign(port: 33) }.to change { subject.port }.to(33)

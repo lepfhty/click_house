@@ -1,4 +1,4 @@
-RSpec.describe ClickHouse::Type::DateTimeType do
+RSpec.describe ClickHouse::Type::DateTimeType, :offline do
   describe '#serialize' do
     let(:time) do
       Time.new(2019, 1, 1, 9, 5, 6)

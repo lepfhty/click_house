@@ -43,6 +43,11 @@ make faraday2 oj rspec
 bundle exec rubocop
 ```
 
+Specs tagged `:offline` run without a server (`bundle exec rspec --tag offline`). To
+cover a response that's hard to get from a real server, build a connection with
+`stub_clickhouse(status:, headers:, body:)` from `spec/support/stub_clickhouse.rb`, tag
+the example `:offline`, and check what was sent with `clickhouse_requests`.
+
 CI runs this matrix on every push. When adding Ruby or ClickHouse versions to CI:
 
 - Add each version in its own PR. If a new version surfaces failures, fix them in

@@ -1,4 +1,4 @@
-RSpec.describe ClickHouse::Util::Pretty do
+RSpec.describe ClickHouse::Util::Pretty, :offline do
   describe '#size' do
     let(:expectation) do
       {

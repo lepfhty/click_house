@@ -1,4 +1,4 @@
-RSpec.describe ClickHouse::Ast::Parser do
+RSpec.describe ClickHouse::Ast::Parser, :offline do
   let(:expectations) do
     {
       "Int" => 'Int',

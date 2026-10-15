@@ -1,4 +1,4 @@
-RSpec.describe ClickHouse::Type::FixedStringType do
+RSpec.describe ClickHouse::Type::FixedStringType, :offline do
   describe '#serialize' do
     def target(value, limit = nil)
       described_class.new.serialize(value, limit)
