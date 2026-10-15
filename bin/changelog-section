@@ -15,6 +15,7 @@ changelog=${2:-CHANGELOG.md}
 # Sections end at the next "# " heading. Lines inside ``` fences are body text,
 # since code samples contain "# " comments.
 awk -v heading="# $section" '
+  { sub(/\r$/, "") }
   /^```/ { fenced = !fenced }
   !fenced && /^# / {
     if (inside) exit

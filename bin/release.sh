@@ -23,7 +23,8 @@ fail() {
 branch=$(git rev-parse --abbrev-ref HEAD)
 [[ $branch == master ]] || fail "on branch '$branch', switch to master"
 
-[[ -z $(git status --porcelain) ]] || fail "working tree is not clean"
+status=$(git status --porcelain)
+[[ -z $status ]] || fail "working tree is not clean"
 
 git fetch --quiet origin master
 [[ $(git rev-parse master) == $(git rev-parse origin/master) ]] \
@@ -35,9 +36,13 @@ tag="v$version"
 if git rev-parse --quiet --verify "refs/tags/$tag" >/dev/null; then
   fail "tag $tag already exists locally, bump lib/click_house/version.rb"
 fi
-if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
-  fail "tag $tag already exists on origin, bump lib/click_house/version.rb"
-fi
+remote_status=0
+git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null || remote_status=$?
+case $remote_status in
+  0) fail "tag $tag already exists on origin, bump lib/click_house/version.rb" ;;
+  2) ;; # not on origin
+  *) fail "couldn't list tags on origin" ;;
+esac
 
 notes=$(bin/changelog-section "$version") || fail "CHANGELOG.md has no '# $version' section"
 [[ -n $notes ]] || fail "CHANGELOG.md section '# $version' is empty"
@@ -56,5 +61,8 @@ if $dry_run; then
 fi
 
 git tag --annotate "$tag" --message "Release $tag"
-git push origin "refs/tags/$tag"
+git push origin "refs/tags/$tag" || {
+  git tag --delete "$tag" >/dev/null
+  fail "pushing $tag failed, removed the local tag; rerun once fixed"
+}
 echo "release: pushed $tag, the release workflow creates the GitHub Release"
