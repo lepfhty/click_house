@@ -5,6 +5,13 @@
   `Connection#get` take precedence, including over `send_progress_in_http_headers`
 * Cast `DateTime` and `DateTime64` values faster (about 2x for columns with a time zone)
   with identical results
+* Cast query results faster by resolving each column's casters once per result instead
+  of for every value, with identical results
+* Skip casting columns whose JSON values are already the cast result (String, FixedString,
+  UUID, Enum, and Nullable, LowCardinality or Array of those). For a `ResultSet` built by
+  hand, `to_a` no longer raises `KeyError` for a row key that isn't in `meta` (it leaves
+  the value unchanged), and a row missing a column gets that column's cast of `nil`
+  instead of staying without it, e.g. `TypeError` for an integer column
 * `config.adapter` also accepts an array of a Faraday adapter and its arguments, e.g.
   `config.adapter = [:test, stubs]`
 * Raise `ClickHouse::DbException` for failed JSON and CSV queries on ClickHouse 23.5 and

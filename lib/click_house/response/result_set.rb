@@ -8,6 +8,10 @@ module ClickHouse
 
       KEY_META_NAME = 'name'
       KEY_META_TYPE = 'type'
+      # built-in casters that return JSON values unchanged
+      IDENTITY_TYPES = [Type::StringType, Type::UndefinedType].freeze
+      # built-in containers that return their input when every inner value is unchanged
+      IDENTITY_CONTAINERS = [Type::NullableType, Type::LowCardinalityType, Type::ArrayType].freeze
 
       def_delegators :to_a,
                      :inspect, :each, :fetch, :length, :count, :size,
@@ -72,11 +76,7 @@ module ClickHouse
       end
 
       def to_a
-        @to_a ||= data.each do |row|
-          row.each do |name, value|
-            row[name] = cast_type(types.fetch(name), value)
-          end
-        end
+        @to_a ||= data.empty? ? data : cast_rows
       end
 
       # @return [Hash<String, Ast::Statement>]
@@ -107,39 +107,58 @@ module ClickHouse
         stmt.arguments.each(&method(:assign_type))
       end
 
-      # @param stmt [Ast::Statement]
-      def cast_type(stmt, value)
-        return cast_container(stmt, value) if stmt.caster.container?
-        return cast_map(stmt, Hash(value)) if stmt.caster.map?
-        return cast_tuple(stmt, Array(value)) if stmt.caster.tuple?
-
-        stmt.caster.cast(value, *stmt.argument_values)
+      def cast_rows
+        columns = casters.compact.to_a
+        data.each do |row|
+          columns.each { |name, caster| row[name] = caster.call(row[name]) }
+        end
       end
 
-      # @return [Hash]
-      # @param stmt [Ast::Statement]
-      # @param hash [Hash]
-      def cast_map(stmt, hash)
-        raise ArgumentError, "expect hash got #{hash.class}" unless hash.is_a?(Hash)
+      # @return [Hash<String, Proc, nil>] a cast callable per column, built once from #types,
+      #   or nil for a column whose JSON values are already the cast result
+      def casters
+        @casters ||= types.transform_values { |stmt| caster_for(stmt) unless identity?(stmt) }
+      end
 
-        key_type, value_type = stmt.arguments
-        hash.each_with_object({}) do |(key, value), object|
-          object[cast_type(key_type, key)] = cast_type(value_type, value)
+      # @param stmt [Ast::Statement]
+      def identity?(stmt)
+        caster = stmt.caster
+        if IDENTITY_CONTAINERS.any? { |type| caster.instance_of?(type) }
+          stmt.arguments.any? && stmt.arguments.all?(&method(:identity?))
+        else
+          IDENTITY_TYPES.any? { |type| caster.instance_of?(type) }
         end
       end
 
       # @param stmt [Ast::Statement]
-      def cast_container(stmt, value)
-        stmt.caster.cast_each(value) do |item|
-          cast_type(stmt.argument_first!, item)
+      # @return [Proc] casts one value of the type described by stmt
+      def caster_for(stmt)
+        # a type missing an inner argument raises once a value reaches it
+        return ->(_value) { stmt.caster } if stmt.nil?
+
+        caster = stmt.caster
+        return container_caster(caster, caster_for(stmt.argument_first!)) if caster.container?
+        return map_caster(*stmt.arguments.values_at(0, 1).map(&method(:caster_for))) if caster.map?
+        return tuple_caster(stmt.arguments.map(&method(:caster_for))) if caster.tuple?
+
+        arguments = stmt.argument_values
+        ->(value) { caster.cast(value, *arguments) }
+      end
+
+      def container_caster(caster, item_caster)
+        ->(value) { caster.cast_each(value) { |item| item_caster.call(item) } }
+      end
+
+      def map_caster(key_caster, value_caster)
+        lambda do |value|
+          Hash(value).each_with_object({}) do |(key, item), object|
+            object[key_caster.call(key)] = value_caster.call(item)
+          end
         end
       end
 
-      # @param stmt [Ast::Statement]
-      def cast_tuple(stmt, value)
-        value.map.with_index do |item, ix|
-          cast_type(stmt.arguments.fetch(ix), item)
-        end
+      def tuple_caster(item_casters)
+        ->(value) { Array(value).map.with_index { |item, ix| item_casters.fetch(ix).call(item) } }
       end
 
       # @param stmt [Ast::Statement]
