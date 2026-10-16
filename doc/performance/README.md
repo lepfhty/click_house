@@ -19,5 +19,6 @@ Network items are from code reading and still need measurement against a real se
 | 05 | [Streaming select API](05-streaming-select.md) | memory | yes (additive) | high for large results | M |
 | 06 | [Opt-in: skip BigDecimal for every JSON number](06-opt-in-skip-bigdecimal-parsing.md) | cpu/memory | no → opt-in | medium | S |
 | 07 | [Make `send_progress_in_http_headers` configurable](07-investigate-send-progress-headers.md) | compat | yes (default stays on, opt-out added) | high for `readonly=1` and proxied users | S |
+| 08 | [Resolve each column's casters once per result](08-compiled-column-casters.md) | cpu | yes | medium–high for wide or large reads | S |
 
 Status values used in tickets: `proposed`, `accepted`, `in progress`, `done`, `rejected`.
