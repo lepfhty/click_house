@@ -1,6 +1,6 @@
 # 09 — Skip columns whose JSON values need no casting
 
-- **Status:** in progress
+- **Status:** done
 - **Area:** cpu
 - **Default-safe:** yes for ClickHouse responses; hand-built `ResultSet`s change (see below)
 - **Effort:** S
@@ -48,6 +48,29 @@ and after this ticket alike:
 - A row key that isn't in `meta` is left unchanged instead of raising `KeyError`.
 - A row that lacks a column gets that column's cast of `nil`, e.g. `TypeError` for an
   integer column. Previously the column was simply left absent.
+
+## Results
+`benchmark/results.csv` rows (Faraday 2, ClickHouse 26.3, 100k rows, 10 iterations,
+`wall_min_ms`, JSON parser; Oj is similar), master → ticket 08 → this ticket:
+
+| Scenario | Master | 08 | 09 |
+|---|---|---|---|
+| `cast String` | 25.4 ms | 17.5 ms | 2.5 ms |
+| `cast UUID` | 26.6 ms | 18.6 ms | 2.5 ms |
+| `cast LowCardinality(String)` | 38.2 ms | 23.8 ms | 2.5 ms |
+| `cast Nullable(String)` | 37.2 ms | 23.6 ms | 2.6 ms |
+| `cast Array(String)` | 58.0 ms | 35.4 ms | 2.5 ms |
+| `cast UInt64` | 26.7 ms | 18.7 ms | 14.9 ms |
+| `cast Map(String, UInt64)` | 112.7 ms | 65.8 ms | 60.6 ms |
+| `select_all_cast` (e2e) | 1060.2 ms | 906.1 ms | 749.3 ms (1.41x vs master) |
+
+Skipped columns cost only the loop over rows. Columns that are still cast also got up
+to 1.3x faster than with ticket 08 (UInt64 1.26x, Float64 1.12x, Map 1.09x), because the
+loop now walks an array of columns instead of each row's hash keys with a lookup per key.
+
+Scenarios that don't cast stayed within run-to-run noise. `select_value_x200` (200
+one-row queries, dominated by HTTP round trips) measured 0.81x in one run of the same code
+and 1.02x in the recorded one.
 
 ## Not proposed
 An `Integer` fast path (return the value when it's already an `Integer`) saved about
