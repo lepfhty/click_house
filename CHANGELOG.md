@@ -1,4 +1,8 @@
 # Unreleased
+* `config.global_params` now also apply to `select_*` and other GET queries, as the README
+  describes; before, only `execute` and `insert` sent them. Settings there such as
+  `session_id` or output formats now affect selects too. Per-request `query:` params to
+  `Connection#get` take precedence, including over `send_progress_in_http_headers`
 * Cast `DateTime` and `DateTime64` values faster (about 2x for columns with a time zone)
   with identical results
 * `config.adapter` also accepts an array of a Faraday adapter and its arguments, e.g.
