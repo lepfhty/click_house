@@ -1,6 +1,6 @@
 # 08 — Resolve each column's casters once per result
 
-- **Status:** in progress
+- **Status:** done
 - **Area:** cpu
 - **Default-safe:** yes, provided results are identical (verify)
 - **Effort:** S
@@ -49,6 +49,37 @@ end-to-end prototype on 200k rows of the benchmark's mixed table against ClickHo
   (`container?`, `map?`, `tuple?`, `cast_each`, `cast`).
 - An empty result still doesn't parse `meta`.
 - `symbolize_keys` keeps working.
+
+## Implementation
+`ResultSet#to_a` fetches a callable per column from `casters`, which is built from
+`types` the first time a value is cast. `caster_for` walks the column's `Ast::Statement`
+once: containers wrap the inner callable in `cast_each`, maps and tuples wrap theirs
+with the same `Hash(value)` / `Array(value)` coercion, and scalars close over
+`argument_values`. The per-value `cast_type`, `cast_container`, `cast_map` and
+`cast_tuple` methods are gone.
+
+Specs cover nested containers, nil maps and tuples, in-place casting, `KeyError` for
+unknown keys, empty results and a custom container registered with `add_type`. An
+old-vs-new comparison over every benchmark cast type, with and without
+`symbolize_keys`, returned identical values and classes.
+
+`benchmark/results.csv` rows (Faraday 2, ClickHouse 26.3, 100k rows, 10 iterations,
+`wall_min_ms`, JSON parser; Oj is similar):
+
+| Scenario | Before | After |
+|---|---|---|
+| `cast UInt64` | 26.7 ms | 18.7 ms (1.43x) |
+| `cast String` | 25.4 ms | 17.5 ms (1.45x) |
+| `cast LowCardinality(String)` | 38.2 ms | 23.8 ms (1.60x) |
+| `cast Nullable(String)` | 37.2 ms | 23.6 ms (1.57x) |
+| `cast Array(String)` | 58.0 ms | 35.4 ms (1.64x) |
+| `cast Map(String, UInt64)` | 112.7 ms | 65.8 ms (1.71x) |
+| `cast Float64` | 51.7 ms | 44.6 ms (1.16x) |
+| `cast DateTime('UTC')` | 210.8 ms | 202.6 ms (1.04x) |
+| `select_all_cast` (e2e) | 1060.2 ms | 906.1 ms (1.17x) |
+
+Scenarios that don't cast moved by up to ±15% between the two runs, which is the
+noise level for those rows.
 
 ## Out of scope
 - Building rows from arrays (JSONCompact): measured as a 0–3 point gain on top of this
