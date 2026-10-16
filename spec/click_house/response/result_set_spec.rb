@@ -70,8 +70,28 @@ RSpec.describe ClickHouse::Response::ResultSet, :offline do
       expect(set.data).to eq([{ 'n' => 1 }])
     end
 
-    it 'raises KeyError for a column missing from meta' do
-      expect { result_set({ 'n' => 'UInt64' }, [{ 'n' => '1', 'extra' => 'x' }]).to_a }.to raise_error(KeyError)
+    it 'leaves keys that are not in meta unchanged' do
+      expect(result_set({ 'n' => 'UInt64' }, [{ 'n' => '1', 'extra' => 'x' }]).to_a).to eq([{ 'n' => 1, 'extra' => 'x' }])
+    end
+
+    it 'casts a built-in container with no inner type' do
+      expect { result_set({ 'n' => 'Nullable' }, [{ 'n' => 1 }]).to_a }.to raise_error(NoMethodError, /caster/)
+    end
+
+    it 'returns values of no-op columns without casting them' do
+      tags = %w[a b]
+      name = +'x'
+      rows = [{ 'name' => name, 'tags' => tags, 'note' => nil, 'days' => ['2022-01-02'] }]
+      columns = {
+        'name' => 'LowCardinality(String)', 'tags' => 'Array(String)',
+        'note' => 'Nullable(String)', 'days' => 'Array(Date)'
+      }
+      row = result_set(columns, rows).to_a.first
+
+      expect(row.fetch('name')).to be(name)
+      expect(row.fetch('tags')).to be(tags)
+      expect(row.fetch('note')).to be_nil
+      expect(row.fetch('days')).to eq([Date.new(2022, 1, 2)])
     end
 
     it 'does not parse types for an empty result' do
@@ -102,6 +122,19 @@ RSpec.describe ClickHouse::Response::ResultSet, :offline do
 
       it 'casts through the registered cast_each' do
         expect(result_set({ 'w' => 'Wrapped(UInt8)' }, [{ 'w' => '7' }]).to_a).to eq([{ 'w' => { 'wrapped' => 7 } }])
+      end
+    end
+
+    context 'with a custom subclass of a no-op caster' do
+      around do |example|
+        ClickHouse.add_type('Shout', Class.new(ClickHouse::Type::StringType) { define_method(:cast) { |value, *| value.upcase } }.new)
+        example.run
+      ensure
+        ClickHouse.types.delete('Shout')
+      end
+
+      it 'still casts the column' do
+        expect(result_set({ 's' => 'Array(Shout)' }, [{ 's' => ['a'] }]).to_a).to eq([{ 's' => ['A'] }])
       end
     end
 

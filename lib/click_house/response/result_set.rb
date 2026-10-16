@@ -8,6 +8,10 @@ module ClickHouse
 
       KEY_META_NAME = 'name'
       KEY_META_TYPE = 'type'
+      # built-in casters that return JSON values unchanged
+      IDENTITY_TYPES = [Type::StringType, Type::UndefinedType].freeze
+      # built-in containers that return their input when every inner value is unchanged
+      IDENTITY_CONTAINERS = [Type::NullableType, Type::LowCardinalityType, Type::ArrayType].freeze
 
       def_delegators :to_a,
                      :inspect, :each, :fetch, :length, :count, :size,
@@ -72,11 +76,7 @@ module ClickHouse
       end
 
       def to_a
-        @to_a ||= data.each do |row|
-          row.each do |name, value|
-            row[name] = casters.fetch(name).call(value)
-          end
-        end
+        @to_a ||= data.empty? ? data : cast_rows
       end
 
       # @return [Hash<String, Ast::Statement>]
@@ -107,9 +107,27 @@ module ClickHouse
         stmt.arguments.each(&method(:assign_type))
       end
 
-      # @return [Hash<String, Proc>] a cast callable per column, built once from #types
+      def cast_rows
+        columns = casters.compact.to_a
+        data.each do |row|
+          columns.each { |name, caster| row[name] = caster.call(row[name]) }
+        end
+      end
+
+      # @return [Hash<String, Proc, nil>] a cast callable per column, built once from #types,
+      #   or nil for a column whose JSON values are already the cast result
       def casters
-        @casters ||= types.transform_values { |stmt| caster_for(stmt) }
+        @casters ||= types.transform_values { |stmt| caster_for(stmt) unless identity?(stmt) }
+      end
+
+      # @param stmt [Ast::Statement]
+      def identity?(stmt)
+        caster = stmt.caster
+        if IDENTITY_CONTAINERS.any? { |type| caster.instance_of?(type) }
+          stmt.arguments.any? && stmt.arguments.all?(&method(:identity?))
+        else
+          IDENTITY_TYPES.any? { |type| caster.instance_of?(type) }
+        end
       end
 
       # @param stmt [Ast::Statement]
