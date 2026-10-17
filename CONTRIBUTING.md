@@ -23,7 +23,9 @@ We track upstream and send changes back when it's convenient, but we never wait 
    `type(scope): summary`, e.g. `perf(types): cache time zone per column`.
 3. Open a PR against this fork's `master`, never against upstream by accident. GitHub
    defaults a fork's PRs to the parent repository, so check the base repository.
-4. Add a line under `Unreleased` in `CHANGELOG.md` for any user-visible change.
+4. For any user-visible change, add a line at the end of its category under `Unreleased`
+   in `CHANGELOG.md`, starting with a link to the PR. Categories go in the order
+   `## Changed`, `## Fixed`, `## Added`, `## Performance`; add one if it's missing.
 
 If one change depends on another that hasn't merged yet, cut the second branch from the
 first and target the first branch in the PR. Retarget it to `master` once the first
@@ -92,7 +94,10 @@ gem 'click_house', git: 'https://github.com/lepfhty/click_house.git', tag: 'vX.Y
 To release:
 
 1. In a PR, bump `lib/click_house/version.rb` following semver, continuing from `2.1.2`,
-   and move the `Unreleased` entries in `CHANGELOG.md` under a new `# X.Y.Z` heading.
+   and move the `Unreleased` entries in `CHANGELOG.md`, with their `##` headings, under a
+   new `# X.Y.Z` heading, leaving `# Unreleased` empty.
+   Within each category, order entries by how many users they affect, most first, so
+   anyone upgrading sees what's likely to touch their code before the edge cases.
 2. Merge it, then on an up-to-date `master` run `make release`.
 
 `make release` runs `bin/release.sh`, which checks that `master` is clean and matches
