@@ -116,6 +116,54 @@ RSpec.describe 'requests without a server', :offline do
     end
   end
 
+  describe 'database precedence' do
+    subject(:connection) do
+      stub_clickhouse(body: '{"meta": [], "data": []}', database: 'cfg', global_params: { database: 'gp' })
+    end
+
+    it 'sends config.database over global_params on GET' do
+      connection.select_all('SELECT 1')
+
+      expect(request.params).to include('database' => 'cfg')
+    end
+
+    it 'sends config.database over global_params on POST' do
+      connection.execute('SELECT 1')
+
+      expect(request.params).to include('database' => 'cfg')
+    end
+
+    it 'sends the database argument over per-request params on GET' do
+      connection.get(body: 'SELECT 1', database: 'arg', query: { database: 'per_call' })
+
+      expect(request.params).to include('database' => 'arg')
+    end
+
+    it 'sends the database argument over per-request params on POST' do
+      connection.execute('SELECT 1', database: 'arg', params: { database: 'per_call' })
+
+      expect(request.params).to include('database' => 'arg')
+    end
+
+    it 'sends no database on GET when the argument is nil' do
+      connection.get(body: 'SELECT 1', database: nil)
+
+      expect(request.params).not_to have_key('database')
+    end
+
+    it 'sends no database on POST when the argument is nil' do
+      connection.databases
+
+      expect(request.params).not_to have_key('database')
+    end
+
+    it 'still sends other per-request params on POST' do
+      connection.execute('SELECT 1', params: { max_threads: 4 })
+
+      expect(request.params).to include('max_threads' => '4', 'database' => 'cfg')
+    end
+  end
+
   it 'uses a config that shares no mutable state with the global one' do
     global = ClickHouse.config
     config = connection.config

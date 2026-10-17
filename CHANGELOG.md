@@ -14,6 +14,11 @@
   `to_a` no longer raises `KeyError` for a row key that isn't in `meta` (it leaves the
   value unchanged), and a row missing a column gets that column's cast of `nil` instead of
   staying without it, e.g. `TypeError` for an integer column
+* [#25](https://github.com/lepfhty/click_house/pull/25) `execute`, `insert` and `post`
+  send `config.database` or the `database:` argument over a `:database` key in
+  `global_params` or `params:`, as selects already did. With `database: nil`, such as in
+  `databases` and `create_database`, they no longer send the `:database` from
+  `global_params`
 
 ## Fixed
 * [#17](https://github.com/lepfhty/click_house/pull/17) Fix `ArgumentError` on every JSON

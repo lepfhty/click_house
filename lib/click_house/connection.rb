@@ -36,7 +36,8 @@ module ClickHouse
       end
 
       params = query.merge(database: database)
-      # settings only go on requests with a body: /ping answers 404 to any query string
+      # settings only go on requests with a body: /ping rejects any query string
+      # (404 on 26.x, 400 "Empty query" on 22.x)
       params = default_params.merge(config.global_params, params) unless body.empty?
 
       transport.get(path) do |conn|
@@ -46,7 +47,7 @@ module ClickHouse
     end
 
     def post(body = nil, query: {}, database: config.database, params: {})
-      transport.post(compose('/', query.merge(database: database, **params)), body)
+      transport.post(compose('/', query.merge(params, database: database)), body)
     end
 
     # transport should work the same both with Faraday v1 and Faraday v2

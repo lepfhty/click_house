@@ -1,6 +1,6 @@
 # 03 — Same param precedence for GET and POST
 
-- **Status:** proposed
+- **Status:** done ([#25](https://github.com/lepfhty/click_house/pull/25))
 - **Area:** connection
 - **Effort:** S
 
@@ -47,6 +47,15 @@ kind of split as the `global_params` bug fixed in #19, and ticket 06 in
 - `compose` keeps `.compact`, so `nil` settings still mean "don't send".
 - Offline specs in `spec/click_house/offline/requests_spec.rb` for each row of the table
   above, on both paths, plus a driver default overridden from `global_params`.
+
+## Implementation
+- `get` already merged `database:` last. `post` now builds
+  `query.merge(params, database: database)`, so on both paths the order is driver
+  defaults (`Connection#default_params`), `global_params`, per-call settings, then
+  `database:`. `nil` removes the key through `compact`.
+- The comment in `Connection#get` gives both `/ping` failures.
+- Offline specs in `spec/click_house/offline/requests_spec.rb` cover each row of the
+  table on both paths and `database: nil`.
 
 ## Behavior change
 On `execute` and `insert`, a `database` in `global_params` or `params:` no longer
