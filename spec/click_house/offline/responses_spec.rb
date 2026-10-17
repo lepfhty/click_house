@@ -27,6 +27,54 @@ RSpec.describe 'responses without a server', :offline do
     end
   end
 
+  describe 'parse_floats' do
+    let(:body) do
+      JSON.generate(
+        meta: [{ name: 'f', type: 'Float64' }, { name: 'd', type: 'Decimal(38, 10)' }],
+        data: [{ f: 0.1, d: '1234567890123456789.0123456789' }]
+      )
+    end
+
+    it 'parses floats as Float' do
+      connection = stub_clickhouse(body: body, parse_floats: true)
+      row = connection.select_all('SELECT 1').data.first
+
+      expect(row.fetch('f')).to be_an_instance_of(Float)
+      expect(row.fetch('d')).to eq('1234567890123456789.0123456789')
+    end
+
+    it 'casts quoted decimals to BigDecimal' do
+      connection = stub_clickhouse(body: body, parse_floats: true)
+      row = connection.select_one('SELECT 1')
+
+      expect(row.fetch('f')).to be_an_instance_of(Float).and eq(0.1)
+      expect(row.fetch('d')).to be_an_instance_of(BigDecimal).and eq(BigDecimal('1234567890123456789.0123456789'))
+    end
+
+    it 'works with symbolize_keys' do
+      connection = stub_clickhouse(body: body, parse_floats: true, symbolize_keys: true)
+      row = connection.select_all('SELECT 1').data.first
+
+      expect(row.keys).to eq(%i[f d])
+      expect(row.fetch(:f)).to be_an_instance_of(Float)
+    end
+
+    it 'leaves the configured load options unchanged' do
+      connection = stub_clickhouse(body: body, parse_floats: true)
+      json_options = connection.config.json_load_options.dup
+      oj_options = connection.config.oj_load_options.dup
+      connection.select_all('SELECT 1')
+
+      expect(connection.config).to have_attributes(json_load_options: json_options, oj_load_options: oj_options)
+    end
+
+    it 'parses floats as BigDecimal by default' do
+      connection = stub_clickhouse(body: body)
+
+      expect(connection.select_all('SELECT 1').data.first.fetch('f')).to be_an_instance_of(BigDecimal)
+    end
+  end
+
   describe 'summary' do
     let(:summary_header) do
       '{"read_rows":"3","read_bytes":"24","written_rows":"1","written_bytes":"8",' \

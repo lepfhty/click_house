@@ -1,6 +1,6 @@
 # 06 — Opt-in: skip BigDecimal for every JSON number
 
-- **Status:** proposed
+- **Status:** done ([#24](https://github.com/lepfhty/click_house/pull/24))
 - **Area:** cpu / memory
 - **Default-safe:** no → opt-in
 - **Effort:** S
@@ -26,3 +26,17 @@ also lose precision on `Decimal` columns.
 - Same `readonly=1` caveat as other server settings; document it.
 - Alternatively, just document the trade-off, since `json_load_options` is already
   configurable.
+
+## Implementation
+- `config.parse_floats` (default `false`). `Connection#default_params` holds the
+  settings the driver sends with every query, now `send_progress_in_http_headers=1` and,
+  with `parse_floats`, `output_format_json_quote_decimals=1`. Both GET and POST start
+  from it, so `global_params` and per-request params override it and `nil` removes it.
+- `ParseJson` merges `decimal_class: nil` and `ParseJsonOj` merges
+  `bigdecimal_load: :float` at parse time. The configured `json_load_options` and
+  `oj_load_options` are left as they are, so the order of assignments doesn't matter.
+- Offline specs for the params on GET and POST and for parsing and casting; a live spec
+  checks a `Decimal(38, 10)` keeps all its digits, on 22.9 and 26.3. Specs check the
+  class, since `BigDecimal('1.5') == 1.5`.
+- Columns the driver doesn't cast (`Dynamic`, `Variant`, `JSON`) and named `Tuple`s keep
+  Decimal values as strings, where the default gives `BigDecimal`.

@@ -2,12 +2,14 @@
 
 # ClickHouse Ruby driver
 
-![CI](https://github.com/shlima/click_house/workflows/CI/badge.svg)
-[![Code Climate](https://codeclimate.com/github/shlima/click_house/badges/gpa.svg)](https://codeclimate.com/github/shlima/click_house)
-[![Gem Version](https://badge.fury.io/rb/click_house.svg)](https://badge.fury.io/rb/click_house)
+[![CI](https://github.com/lepfhty/click_house/actions/workflows/main.yml/badge.svg)](https://github.com/lepfhty/click_house/actions/workflows/main.yml)
 
-```bash
-gem install click_house
+Releases are git tags; nothing is published to RubyGems. See
+[Releases](https://github.com/lepfhty/click_house/releases) for the latest tag.
+
+```ruby
+# Gemfile
+gem 'click_house', git: 'https://github.com/lepfhty/click_house.git', tag: 'vX.Y.Z'
 ```
 
 A modern Ruby database driver for ClickHouse. [ClickHouse](https://clickhouse.yandex)
@@ -43,6 +45,47 @@ Yandex uses HTTP interface for working from Java and Perl, Python and Go as well
 
 ## Configuration
 
+### Recommended
+
+The defaults stay compatible with old servers and every setup. For Ruby 3.3, Faraday
+1.10.6+ or 2, and ClickHouse 26.x, turn these on. On Faraday 2, persistent connections
+need `gem 'faraday-net_http_persistent'` in your Gemfile, and
+`require 'faraday/net_http_persistent'` outside Bundler.
+
+```ruby
+ClickHouse.config do |config|
+  # ... Connection info here
+
+  # Verify the server's certificate over https
+  config.ssl_verify = true
+
+  # Reuse sockets instead of a new TCP (and TLS) handshake per query
+  # Run the first query after Puma or Unicorn forks, so each worker opens its own sockets.
+  config.adapter = :net_http_persistent
+
+  # Settings sent with every query, selects included
+  config.global_params = { max_execution_time: 300 } # the server stops runaway queries
+  config.timeout = 330                               # safety net above max_execution_time
+  config.open_timeout = 5
+
+  # Parse JSON numbers as Float; Decimals are requested as strings to keep precision
+  config.parse_floats = true
+end
+```
+
+By default the JSON parser turns every fractional number into a `BigDecimal`, so Decimal
+columns keep their precision, and Float32/Float64 columns are then converted back to
+`Float`, which slows parsing float-heavy results by about 60%. `parse_floats` parses
+them as `Float` and has the server send Decimal values as strings instead.
+
+`max_execution_time` also applies to `execute` and `insert`. Lift it for long jobs such as
+backfills: `execute(sql, params: { max_execution_time: 0 })`.
+
+[doc/recommended-config.md](doc/recommended-config.md) explains each setting and covers
+ClickHouse before 26.1, `readonly=1` users and proxies that reject large headers.
+
+### All options
+
 ```ruby
 ClickHouse.config do |config|
   config.logger = Logger.new(STDOUT)
@@ -53,14 +96,12 @@ ClickHouse.config do |config|
   config.timeout = 60
   config.open_timeout = 3
   config.ssl_verify = false
-  # set to true to symbolize keys for SELECT and INSERT statements (type casting)
-  config.symbolize_keys = false
   config.headers = {}
 
   # or provide connection options separately
   config.scheme = 'http'
   config.host = 'localhost'
-  config.port = 'port'
+  config.port = 8123
 
   # if you use HTTP basic Auth
   config.username = 'user'
@@ -74,10 +115,23 @@ ClickHouse.config do |config|
   # or Oj parser
   config.json_parser = ClickHouse::Middleware::ParseJsonOj
 
+  # Parser options: merge into the existing hashes, since they hold defaults. Settings
+  # loaded with assign (e.g. from YAML) replace them, so merge those in Ruby instead
+  # passed to JSON.parse; default { decimal_class: BigDecimal }
+  config.json_load_options = config.json_load_options.merge(decimal_class: BigDecimal)
+  # passed to Oj.load; defaults in lib/click_house/config.rb
+  config.oj_load_options = config.oj_load_options.merge(bigdecimal_load: :bigdecimal)
+
   # JSON.dump (default one)
   config.json_serializer = ClickHouse::Serializer::JsonSerializer
   # or Oj.dump
   config.json_serializer = ClickHouse::Serializer::JsonOjSerializer
+
+  # true parses JSON numbers as Float and asks the server to quote Decimal values
+  config.parse_floats = false
+
+  # true returns rows with symbol keys instead of strings
+  config.symbolize_keys = false
 end
 ```
 
@@ -370,6 +424,9 @@ ClickHouse.types # => {}
 ClickHouse.types.default #=> #<ClickHouse::Type::UndefinedType>
 ```
 
+Fractional numbers are parsed as `BigDecimal` and then cast per column, which is slow for
+Float32/Float64 columns. See `parse_floats` under [Recommended](#recommended).
+
 Type casting works automatically when fetching data, when inserting data, you must serialize the types yourself
 
 ```sql
@@ -394,11 +451,15 @@ end
 
 ## Using with a connection pool
 
+`ClickHouse::Config.new` starts from the defaults, not from `ClickHouse.config`. Use
+`ClickHouse.config.clone.assign(...)` so pooled connections keep your configured settings.
+
 ```ruby
 require 'connection_pool'
 
 ClickHouse.connection = ConnectionPool.new(size: 2) do
-  ClickHouse::Connection.new(ClickHouse::Config.new(url: 'http://replica.example.com'))
+  config = ClickHouse.config.clone.assign(url: 'http://replica.example.com')
+  ClickHouse::Connection.new(config)
 end
 
 ClickHouse.connection.with do |conn|

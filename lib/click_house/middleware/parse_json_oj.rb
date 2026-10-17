@@ -9,10 +9,14 @@ module ClickHouse
       def on_complete(env)
         return if error?(env) || !content_type?(env, content_type)
 
-        env.body = Oj.load(env.body, config.oj_load_options) unless blank_body?(env)
+        env.body = Oj.load(env.body, load_options) unless blank_body?(env)
       end
 
       private
+
+      def load_options
+        config.parse_floats ? config.oj_load_options.merge(bigdecimal_load: :float) : config.oj_load_options
+      end
 
       def on_setup
         require 'oj' unless defined?(Oj)

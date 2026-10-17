@@ -1,26 +1,60 @@
 # Unreleased
-* `config.global_params` now also apply to `select_*` and other GET queries, as the README
-  describes; before, only `execute` and `insert` sent them. Settings there such as
-  `session_id` or output formats now affect selects too. Per-request `query:` params to
-  `Connection#get` take precedence, including over `send_progress_in_http_headers`
-* Cast `DateTime` and `DateTime64` values faster (about 2x for columns with a time zone)
-  with identical results
-* Cast query results faster by resolving each column's casters once per result instead
-  of for every value, with identical results
-* Skip casting columns whose JSON values are already the cast result (String, FixedString,
-  UUID, Enum, and Nullable, LowCardinality or Array of those). For a `ResultSet` built by
-  hand, `to_a` no longer raises `KeyError` for a row key that isn't in `meta` (it leaves
-  the value unchanged), and a row missing a column gets that column's cast of `nil`
-  instead of staying without it, e.g. `TypeError` for an integer column
-* `config.adapter` also accepts an array of a Faraday adapter and its arguments, e.g.
-  `config.adapter = [:test, stubs]`
-* Raise `ClickHouse::DbException` for failed JSON and CSV queries on ClickHouse 23.5 and
-  later, which raised `JSON::ParserError`/`Oj::ParseError` because the server sends error
-  text with an `application/json` content type
-* Fix `NoMethodError` for `CGI.parse` in the logging middleware when no other gem loads
-  the `cgi` library, e.g. Faraday 2.14+ with ActiveSupport 8+, or Ruby 4.0
-* Fix `ArgumentError` on every JSON response when using json gem 3.x. json 3 also rejects
-  unknown or string keys in `config.json_load_options`
+
+## Changed
+* [#19](https://github.com/lepfhty/click_house/pull/19) `config.global_params` now also
+  apply to `select_*` and other GET queries, as the README describes; before, only
+  `execute` and `insert` sent them. Settings there such as `session_id` or output formats
+  now affect selects too. Per-request `query:` params to `Connection#get` take precedence,
+  including over `send_progress_in_http_headers`
+* [#6](https://github.com/lepfhty/click_house/pull/6) Raise `ClickHouse::DbException` for
+  failed JSON and CSV queries on ClickHouse 23.5 and later, which raised
+  `JSON::ParserError`/`Oj::ParseError` because the server sends error text with an
+  `application/json` content type
+* [#21](https://github.com/lepfhty/click_house/pull/21) For a `ResultSet` built by hand,
+  `to_a` no longer raises `KeyError` for a row key that isn't in `meta` (it leaves the
+  value unchanged), and a row missing a column gets that column's cast of `nil` instead of
+  staying without it, e.g. `TypeError` for an integer column
+* [#25](https://github.com/lepfhty/click_house/pull/25) `execute`, `insert` and `post`
+  send `config.database` or the `database:` argument over a `:database` key in
+  `global_params` or `params:`, as selects already did. With `database: nil`, such as in
+  `databases` and `create_database`, they no longer send the `:database` from
+  `global_params`
+
+## Fixed
+* [#17](https://github.com/lepfhty/click_house/pull/17) Fix `ArgumentError` on every JSON
+  response when using json gem 3.x. json 3 also rejects unknown or string keys in
+  `config.json_load_options`
+* [#18](https://github.com/lepfhty/click_house/pull/18) Fix `NoMethodError` for
+  `CGI.parse` in the logging middleware when no other gem loads the `cgi` library, e.g.
+  Faraday 2.14+ with ActiveSupport 8+, or Ruby 4.0
+
+## Added
+* [#13](https://github.com/lepfhty/click_house/pull/13) `config.adapter` also accepts an
+  array of a Faraday adapter and its arguments, e.g. `config.adapter = [:test, stubs]`
+* [#24](https://github.com/lepfhty/click_house/pull/24) `config.parse_floats` parses JSON
+  numbers as `Float` instead of `BigDecimal` and sends
+  `output_format_json_quote_decimals=1`, so Decimal columns arrive as strings and keep
+  their precision. Off by default. `readonly=1` users need the setting in their profile
+
+## Performance
+* [#20](https://github.com/lepfhty/click_house/pull/20) Cast query results faster by
+  resolving each column's casters once per result instead of for every value, with
+  identical results
+* [#21](https://github.com/lepfhty/click_house/pull/21) Skip casting columns whose JSON
+  values are already the cast result (String, FixedString, UUID, Enum, and Nullable,
+  LowCardinality or Array of those)
+* [#16](https://github.com/lepfhty/click_house/pull/16) Cast `DateTime` and `DateTime64`
+  values faster (about 2x for columns with a time zone) with identical results
+
+# 2.1.2
+* Cast `Date`, `DateTime` and `DateTime64` values with `strptime` instead of `parse`, and
+  look up each column's type arguments once, for faster casting
+* `Date`, `DateTime` and `DateTime64` casting expects ClickHouse's default
+  `date_time_output_format`; values in `iso` format now raise `ArgumentError`
+* Casters no longer pass `nil` through for columns that aren't `Nullable`: Integer casting
+  raises `TypeError`, IPv4/IPv6 casting raises `IPAddr::AddressFamilyError`, String
+  casting returns `""`, and Integer serialization writes `0`. `LowCardinality` passes
+  `nil` on to its inner type
 
 # 2.1.1
 * Fix logging with symbolized keys JSON

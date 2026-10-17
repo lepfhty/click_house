@@ -84,6 +84,86 @@ RSpec.describe 'requests without a server', :offline do
     end
   end
 
+  describe 'parse_floats' do
+    [[:get, ->(c) { c.select_all('SELECT 1') }], [:post, ->(c) { c.execute('SELECT 1') }]].each do |method, run|
+      it "asks for quoted decimals on #{method.upcase}" do
+        run.call(stub_clickhouse(body: '{"meta": [], "data": []}', parse_floats: true))
+
+        expect(request.params).to include('output_format_json_quote_decimals' => '1')
+      end
+
+      it "lets a nil global param remove quoted decimals on #{method.upcase}" do
+        run.call(stub_clickhouse(
+          body: '{"meta": [], "data": []}',
+          parse_floats: true,
+          global_params: { output_format_json_quote_decimals: nil }
+        ))
+
+        expect(request.params).not_to have_key('output_format_json_quote_decimals')
+      end
+    end
+
+    it 'lets a nil per-request param remove quoted decimals on POST' do
+      stub_clickhouse(parse_floats: true).execute('SELECT 1', params: { output_format_json_quote_decimals: nil })
+
+      expect(request.params).not_to have_key('output_format_json_quote_decimals')
+    end
+
+    it 'sends no params with ping' do
+      stub_clickhouse(parse_floats: true).ping
+
+      expect(request.params).to eq({})
+    end
+  end
+
+  describe 'database precedence' do
+    subject(:connection) do
+      stub_clickhouse(body: '{"meta": [], "data": []}', database: 'cfg', global_params: { database: 'gp' })
+    end
+
+    it 'sends config.database over global_params on GET' do
+      connection.select_all('SELECT 1')
+
+      expect(request.params).to include('database' => 'cfg')
+    end
+
+    it 'sends config.database over global_params on POST' do
+      connection.execute('SELECT 1')
+
+      expect(request.params).to include('database' => 'cfg')
+    end
+
+    it 'sends the database argument over per-request params on GET' do
+      connection.get(body: 'SELECT 1', database: 'arg', query: { database: 'per_call' })
+
+      expect(request.params).to include('database' => 'arg')
+    end
+
+    it 'sends the database argument over per-request params on POST' do
+      connection.execute('SELECT 1', database: 'arg', params: { database: 'per_call' })
+
+      expect(request.params).to include('database' => 'arg')
+    end
+
+    it 'sends no database on GET when the argument is nil' do
+      connection.get(body: 'SELECT 1', database: nil)
+
+      expect(request.params).not_to have_key('database')
+    end
+
+    it 'sends no database on POST when the argument is nil' do
+      connection.databases
+
+      expect(request.params).not_to have_key('database')
+    end
+
+    it 'still sends other per-request params on POST' do
+      connection.execute('SELECT 1', params: { max_threads: 4 })
+
+      expect(request.params).to include('max_threads' => '4', 'database' => 'cfg')
+    end
+  end
+
   it 'uses a config that shares no mutable state with the global one' do
     global = ClickHouse.config
     config = connection.config

@@ -31,6 +31,7 @@ module ClickHouse
       json_load_options: {
         decimal_class: BigDecimal,
       },
+      parse_floats: false,
       # should be after json load options
       symbolize_keys: false,
     }.freeze
@@ -55,6 +56,8 @@ module ClickHouse
     attr_accessor :oj_dump_options
     attr_accessor :json_serializer # [ClickHouse::Serializer::Base]
     attr_accessor :symbolize_keys # [NilClass, Boolean]
+    # [Boolean] parse JSON numbers as Float; Decimal columns are requested as strings
+    attr_accessor :parse_floats
 
     def initialize(params = {})
       assign(DEFAULTS.merge(params))
