@@ -37,7 +37,7 @@ module ClickHouse
 
       params = query.merge(database: database)
       # settings only go on requests with a body: /ping answers 404 to any query string
-      params = { send_progress_in_http_headers: 1 }.merge(config.global_params, params) unless body.empty?
+      params = default_params.merge(config.global_params, params) unless body.empty?
 
       transport.get(path) do |conn|
         conn.params = params.compact
@@ -78,7 +78,17 @@ module ClickHouse
 
     def compose(path, query = {})
       # without <query.compact> "DB::Exception: Empty query" error will occur
-      "#{path}?#{URI.encode_www_form({ send_progress_in_http_headers: 1 }.merge(query).compact)}"
+      "#{path}?#{URI.encode_www_form(default_params.merge(query).compact)}"
+    end
+
+    # Settings the driver sends with every query; global_params and per-request params
+    # override them, and nil removes one
+    # @return [Hash]
+    def default_params
+      {
+        send_progress_in_http_headers: 1,
+        output_format_json_quote_decimals: (1 if config.parse_floats)
+      }
     end
 
     # @return [Boolean]
