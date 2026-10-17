@@ -64,21 +64,19 @@ ClickHouse.config do |config|
   config.adapter = :net_http_persistent
 
   # Settings sent with every query, selects included
-  config.global_params = {
-    max_execution_time: 300,                 # the server stops runaway queries
-    output_format_json_quote_decimals: 1     # keeps Decimal precision, see below
-  }
-  config.timeout = 330                       # safety net above max_execution_time
+  config.global_params = { max_execution_time: 300 } # the server stops runaway queries
+  config.timeout = 330                               # safety net above max_execution_time
   config.open_timeout = 5
 
-  # Parse JSON numbers as Float instead of BigDecimal
-  config.json_load_options = config.json_load_options.merge(decimal_class: nil)
-  config.oj_load_options = config.oj_load_options.merge(bigdecimal_load: :float)
+  # Parse JSON numbers as Float; Decimals are requested as strings to keep precision
+  config.parse_floats = true
 end
 ```
 
-**Float parsing must go with `output_format_json_quote_decimals: 1`.** Without it,
-Decimal columns parse as `Float` and lose precision.
+By default the JSON parser turns every fractional number into a `BigDecimal`, so Decimal
+columns keep their precision, and Float32/Float64 columns are then converted back to
+`Float`, which slows parsing float-heavy results by about 60%. `parse_floats` parses
+them as `Float` and has the server send Decimal values as strings instead.
 
 `max_execution_time` also applies to `execute` and `insert`. Lift it for long jobs such as
 backfills: `execute(sql, params: { max_execution_time: 0 })`.
@@ -128,6 +126,9 @@ ClickHouse.config do |config|
   config.json_serializer = ClickHouse::Serializer::JsonSerializer
   # or Oj.dump
   config.json_serializer = ClickHouse::Serializer::JsonOjSerializer
+
+  # true parses JSON numbers as Float and asks the server to quote Decimal values
+  config.parse_floats = false
 
   # true returns rows with symbol keys instead of strings
   config.symbolize_keys = false
@@ -422,6 +423,9 @@ ClickHouse.types.clear
 ClickHouse.types # => {}
 ClickHouse.types.default #=> #<ClickHouse::Type::UndefinedType>
 ```
+
+Fractional numbers are parsed as `BigDecimal` and then cast per column, which is slow for
+Float32/Float64 columns. See `parse_floats` under [Recommended](#recommended).
 
 Type casting works automatically when fetching data, when inserting data, you must serialize the types yourself
 

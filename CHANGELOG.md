@@ -26,6 +26,10 @@
 ## Added
 * [#13](https://github.com/lepfhty/click_house/pull/13) `config.adapter` also accepts an
   array of a Faraday adapter and its arguments, e.g. `config.adapter = [:test, stubs]`
+* [#24](https://github.com/lepfhty/click_house/pull/24) `config.parse_floats` parses JSON
+  numbers as `Float` instead of `BigDecimal` and sends
+  `output_format_json_quote_decimals=1`, so Decimal columns arrive as strings and keep
+  their precision. Off by default. `readonly=1` users need the setting in their profile
 
 ## Performance
 * [#20](https://github.com/lepfhty/click_house/pull/20) Cast query results faster by
