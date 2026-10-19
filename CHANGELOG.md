@@ -1,5 +1,7 @@
 # Unreleased
 
+# 2.2.0
+
 ## Changed
 * [#19](https://github.com/lepfhty/click_house/pull/19) `config.global_params` now also
   apply to `select_*` and other GET queries, as the README describes; before, only
@@ -10,15 +12,15 @@
   failed JSON and CSV queries on ClickHouse 23.5 and later, which raised
   `JSON::ParserError`/`Oj::ParseError` because the server sends error text with an
   `application/json` content type
-* [#21](https://github.com/lepfhty/click_house/pull/21) For a `ResultSet` built by hand,
-  `to_a` no longer raises `KeyError` for a row key that isn't in `meta` (it leaves the
-  value unchanged), and a row missing a column gets that column's cast of `nil` instead of
-  staying without it, e.g. `TypeError` for an integer column
 * [#25](https://github.com/lepfhty/click_house/pull/25) `execute`, `insert` and `post`
   send `config.database` or the `database:` argument over a `:database` key in
   `global_params` or `params:`, as selects already did. With `database: nil`, such as in
   `databases` and `create_database`, they no longer send the `:database` from
   `global_params`
+* [#21](https://github.com/lepfhty/click_house/pull/21) For a `ResultSet` built by hand,
+  `to_a` no longer raises `KeyError` for a row key that isn't in `meta` (it leaves the
+  value unchanged), and a row missing a column gets that column's cast of `nil` instead of
+  staying without it, e.g. `TypeError` for an integer column
 
 ## Fixed
 * [#17](https://github.com/lepfhty/click_house/pull/17) Fix `ArgumentError` on every JSON
@@ -29,12 +31,12 @@
   Faraday 2.14+ with ActiveSupport 8+, or Ruby 4.0
 
 ## Added
-* [#13](https://github.com/lepfhty/click_house/pull/13) `config.adapter` also accepts an
-  array of a Faraday adapter and its arguments, e.g. `config.adapter = [:test, stubs]`
 * [#24](https://github.com/lepfhty/click_house/pull/24) `config.parse_floats` parses JSON
   numbers as `Float` instead of `BigDecimal` and sends
   `output_format_json_quote_decimals=1`, so Decimal columns arrive as strings and keep
   their precision. Off by default. `readonly=1` users need the setting in their profile
+* [#13](https://github.com/lepfhty/click_house/pull/13) `config.adapter` also accepts an
+  array of a Faraday adapter and its arguments, e.g. `config.adapter = [:test, stubs]`
 
 ## Performance
 * [#20](https://github.com/lepfhty/click_house/pull/20) Cast query results faster by

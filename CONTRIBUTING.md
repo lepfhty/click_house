@@ -93,7 +93,7 @@ gem 'click_house', git: 'https://github.com/lepfhty/click_house.git', tag: 'vX.Y
 
 To release:
 
-1. In a PR, bump `lib/click_house/version.rb` following semver, continuing from `2.1.2`,
+1. In a PR, bump `lib/click_house/version.rb` following semver from the latest `v*` tag,
    and move the `Unreleased` entries in `CHANGELOG.md`, with their `##` headings, under a
    new `# X.Y.Z` heading, leaving `# Unreleased` empty.
    Within each category, order entries by how many users they affect, most first, so
