@@ -123,7 +123,7 @@ RSpec.describe 'responses without a server', :offline do
       let(:partial_json) { "{\n\t\"meta\": [{\"name\": \"number\", \"type\": \"UInt64\"}],\n\t\"data\":\n\t[\n\t\t{\"number\": 0}" }
 
       it 'raises DbException with only the error text' do
-        pending 'the message includes the partial JSON body (doc/performance/07, existing gaps)'
+        pending 'the message includes the partial JSON body (doc/performance/05, mid-stream errors)'
 
         connection = stub_clickhouse(
           status: 500,
