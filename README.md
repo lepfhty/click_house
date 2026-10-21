@@ -2,14 +2,14 @@
 
 # ClickHouse Ruby driver
 
-[![CI](https://github.com/lepfhty/click_house/actions/workflows/main.yml/badge.svg)](https://github.com/lepfhty/click_house/actions/workflows/main.yml)
+[![CI](https://github.com/tenjin/click_house/actions/workflows/main.yml/badge.svg)](https://github.com/tenjin/click_house/actions/workflows/main.yml)
 
 Releases are git tags; nothing is published to RubyGems. See
-[Releases](https://github.com/lepfhty/click_house/releases) for the latest tag.
+[Releases](https://github.com/tenjin/click_house/releases) for the latest tag.
 
 ```ruby
 # Gemfile
-gem 'click_house', git: 'https://github.com/lepfhty/click_house.git', tag: 'vX.Y.Z'
+gem 'click_house', git: 'https://github.com/tenjin/click_house.git', tag: 'vX.Y.Z'
 ```
 
 A modern Ruby database driver for ClickHouse. [ClickHouse](https://clickhouse.yandex)
