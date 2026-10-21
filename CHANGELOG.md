@@ -1,5 +1,10 @@
 # Unreleased
 
+## Added
+* [#31](https://github.com/tenjin/click_house/pull/31) Releases are also published as a
+  gem to GitHub Packages (`https://rubygems.pkg.github.com/tenjin`), so apps can install
+  a version with a token instead of from the git tag
+
 # 2.2.0
 
 ## Changed
