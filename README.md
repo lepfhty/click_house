@@ -4,12 +4,25 @@
 
 [![CI](https://github.com/tenjin/click_house/actions/workflows/main.yml/badge.svg)](https://github.com/tenjin/click_house/actions/workflows/main.yml)
 
-Releases are git tags; nothing is published to RubyGems. See
-[Releases](https://github.com/tenjin/click_house/releases) for the latest tag.
+Each release is a git tag and a gem on GitHub Packages; nothing is published to
+RubyGems. See [Releases](https://github.com/tenjin/click_house/releases) for the latest
+version. Install from the tag:
 
 ```ruby
 # Gemfile
 gem 'click_house', git: 'https://github.com/tenjin/click_house.git', tag: 'vX.Y.Z'
+```
+
+Or from GitHub Packages, which needs a GitHub token with `read:packages` (for example
+`BUNDLE_RUBYGEMS__PKG__GITHUB__COM=<user>:<token>`) even though the package is public.
+Keep the `source` block: RubyGems has an unrelated `click_house` gem, and the block stops
+Bundler from installing that one instead.
+
+```ruby
+# Gemfile
+source 'https://rubygems.pkg.github.com/tenjin' do
+  gem 'click_house', '~> X.Y'
+end
 ```
 
 A modern Ruby database driver for ClickHouse. [ClickHouse](https://clickhouse.yandex)

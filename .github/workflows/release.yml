@@ -50,3 +50,28 @@ jobs:
           TAG: ${{ github.ref_name }}
           GH_TOKEN: ${{ github.token }}
         run: gh release create "$TAG" --verify-tag --title "$TAG" --notes-file notes.md
+
+  publish-gem:
+    needs: github-release
+    runs-on: ubuntu-24.04
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Ruby 3.3
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+
+      - name: Build the gem
+        run: gem build click_house.gemspec
+
+      - name: Push to GitHub Packages
+        env:
+          TAG: ${{ github.ref_name }}
+          GEM_HOST_API_KEY: Bearer ${{ github.token }}
+        run: gem push --host https://rubygems.pkg.github.com/tenjin "click_house-${TAG#v}.gem"

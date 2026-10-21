@@ -84,8 +84,9 @@ change gemspec constraints only when one blocks a real upgrade.
 
 ## Releases
 
-A release is a git tag. No gem is published anywhere: apps install the fork from git,
-pinned to a release tag, and Bundler builds the gem from the gemspec:
+A release is a git tag plus a gem published to GitHub Packages at
+`https://rubygems.pkg.github.com/tenjin`. Apps install either from git, pinned to a
+release tag, or from GitHub Packages with a token (see the README):
 
 ```ruby
 gem 'click_house', git: 'https://github.com/tenjin/click_house.git', tag: 'vX.Y.Z'
@@ -108,9 +109,12 @@ release` runs the checks without tagging.
 
 Pushing the tag triggers the release workflow (`.github/workflows/release.yml`), which
 checks the tag matches `ClickHouse::VERSION` and is on `master`, then creates the GitHub
-Release with the version's `CHANGELOG.md` section as its notes. `bin/release.sh` runs
-the same checks before tagging, so a failed run is usually transient: rerun the job. A
-missing Release breaks nothing, since apps pin the tag.
+Release with the version's `CHANGELOG.md` section as its notes. A second job then builds
+the gem and pushes it to GitHub Packages. `bin/release.sh` runs the same checks before
+tagging, so a failed run is usually transient: rerun the failed jobs. A missing Release
+breaks nothing for apps that pin the tag, but apps installing from GitHub Packages don't
+see the version until the gem is pushed. GitHub Packages refuses to overwrite a version,
+so a rerun after a successful push fails at the push step; that's harmless.
 
 ## Upstream
 

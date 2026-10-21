@@ -9,7 +9,8 @@ Gem::Specification.new do |spec|
   spec.email         = ['alex.shilov.by@gmail.com']
   spec.summary       = 'Modern Ruby database driver for ClickHouse'
   spec.description   = 'Yandex ClickHouse database interface for Ruby'
-  spec.homepage      = 'https://github.com/shlima/click_house'
+  spec.homepage      = 'https://github.com/tenjin/click_house'
+  spec.metadata['github_repo'] = 'ssh://github.com/tenjin/click_house'
   spec.required_ruby_version = '>= 2.7.0'
 
   # Specify which files should be added to the gem when it is released.
