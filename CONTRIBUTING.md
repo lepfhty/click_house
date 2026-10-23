@@ -88,7 +88,7 @@ A release is a git tag. No gem is published anywhere: apps install the fork from
 pinned to a release tag, and Bundler builds the gem from the gemspec:
 
 ```ruby
-gem 'click_house', git: 'https://github.com/lepfhty/click_house.git', tag: 'vX.Y.Z'
+gem 'click_house', git: 'https://github.com/tenjin/click_house.git', tag: 'vX.Y.Z'
 ```
 
 To release:
